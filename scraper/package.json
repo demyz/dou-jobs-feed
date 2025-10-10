@@ -1,0 +1,39 @@
+{
+  "name": "dou-jobs-scraper",
+  "version": "0.1.0",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx watch src/index.ts",
+    "dev_old2": "tsx watch src/index.ts",
+    "dev_old": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node --experimental-specifier-resolution=node dist/index.js",
+    "start_old2": "node dist/index.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^24.5.2",
+    "@types/pg": "^8.15.5",
+    "nodemon": "^3.1.10",
+    "pino-pretty": "^13.1.1",
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "axios": "^1.12.2",
+    "cheerio": "^1.1.0",
+    "dotenv": "^17.2.2",
+    "pg": "^8.16.3",
+    "pino": "^9.11.0"
+  }
+}
