@@ -1,0 +1,29 @@
+FROM node:18-alpine
+
+# Install dependencies for Prisma
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy package files and tsconfig
+COPY scraper/package*.json ./
+COPY scraper/tsconfig.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy prisma schema
+COPY scraper/prisma ./prisma
+
+# Generate Prisma Client
+RUN npm run db:generate
+
+# Copy source code
+COPY scraper/src ./src
+
+# Expose port if needed (optional)
+# EXPOSE 3000
+
+# Run in development mode with hot reload
+CMD ["npm", "run", "dev"]
+

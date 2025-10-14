@@ -1,0 +1,44 @@
+name: dou-jobs-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dou-jobs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dou_jobs
+    volumes:
+      - ../../db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dou-jobs-network
+
+  scraper:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.scraper
+    container_name: dou-jobs-scraper
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
+      NODE_ENV: development
+    volumes:
+      - ../../scraper/src:/app/src
+      - ../../scraper/prisma:/app/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+
+networks:
+  dou-jobs-network:
+    name: dou-jobs-dev-network
+    driver: bridge
+
