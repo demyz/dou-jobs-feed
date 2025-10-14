@@ -8,11 +8,8 @@
   },
   "scripts": {
     "dev": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx watch src/index.ts",
-    "dev_old2": "tsx watch src/index.ts",
-    "dev_old": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node --experimental-specifier-resolution=node dist/index.js",
-    "start_old2": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev"

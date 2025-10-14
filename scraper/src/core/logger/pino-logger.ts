@@ -1,5 +1,7 @@
-import pino from "pino";
-import { isProd, config } from "@/config";
+import pino, { Logger } from "pino";
+import { isProd, config } from "@/config/index";
+
+export type PinoLogger = Logger;
 
 export const pinoLogger = pino({
   level: config.logLevel,

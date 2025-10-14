@@ -1,4 +1,4 @@
-import { logger } from '@/core/logger';
+import { logger } from '@/core/logger/index';
 
 async function main() {
   logger.info('Starting...');
