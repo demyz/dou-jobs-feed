@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "dev": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx watch src/index.ts",

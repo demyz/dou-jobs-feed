@@ -12,4 +12,6 @@ export const config = {
   serviceName: process.env.SERVICE_NAME || 'scraper',
 
   logLevel: process.env.LOG_LEVEL || (isProd ? 'info' : 'debug'),
+
+  baseUrl: process.env.BASE_URL || 'https://jobs.dou.ua',
 };

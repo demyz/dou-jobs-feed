@@ -1,10 +1,13 @@
 import { logger } from '@/core/logger/index';
+import { runCategoryScraper } from '@/tasks/scrap-categories';
 
 async function main() {
-  logger.info('Starting...');
+  logger.info('Starting DOU Jobs Scraper...');
 
-  // TODO: Initialize scraper service
-  console.log('Scraper is ready to start.');
+  // Run category scraper
+  await runCategoryScraper();
+
+  logger.info('Scraper finished successfully');
 }
 
 // Handle uncaught exceptions
