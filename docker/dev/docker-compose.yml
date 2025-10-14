@@ -37,6 +37,26 @@ services:
     networks:
       - dou-jobs-network
 
+  prisma-studio:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.scraper
+    container_name: dou-jobs-prisma-studio
+    restart: unless-stopped
+    command: npx prisma studio --port 5555 --browser none
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
+      NODE_ENV: development
+    ports:
+      - "5555:5555"
+    volumes:
+      - ../../scraper/prisma:/app/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+
 networks:
   dou-jobs-network:
     name: dou-jobs-dev-network
