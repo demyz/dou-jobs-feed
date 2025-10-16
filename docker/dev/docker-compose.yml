@@ -37,6 +37,27 @@ services:
     networks:
       - dou-jobs-network
 
+  category-scraper:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.scraper
+    container_name: dou-jobs-category-scraper
+    restart: "no"
+    command: npm run task:categories
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
+      NODE_ENV: development
+    volumes:
+      - ../../scraper/src:/app/src
+      - ../../scraper/prisma:/app/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    profiles:
+      - cron
+
   prisma-studio:
     build:
       context: ../..

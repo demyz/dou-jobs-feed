@@ -10,6 +10,7 @@
     "dev": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx watch src/index.ts",
     "build": "tsc",
     "start": "node --experimental-specifier-resolution=node dist/index.js",
+    "task:categories": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx src/tasks/run-category-scraper.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev"

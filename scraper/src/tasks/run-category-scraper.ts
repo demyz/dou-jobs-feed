@@ -1,13 +1,12 @@
 import { logger } from '@/core/logger/index';
-import { runCategoryScraper } from '@/tasks/scrap-categories';
+import { jobCategoriesService } from '@/modules/job-categories/job-categories.service';
 
 async function main() {
-  logger.info('Starting DOU Jobs Scraper...');
+  logger.info('Starting Category Scraper...');
 
-  // Run category scraper
-  await runCategoryScraper();
+  await jobCategoriesService.runCategoryScraper();
 
-  logger.info('Scraper finished successfully');
+  logger.info('Category Scraper finished successfully');
 }
 
 // Handle uncaught exceptions
@@ -22,6 +21,7 @@ process.on('unhandledRejection', (reason: any, promise: any) => {
 });
 
 main().catch((error: any) => {
-  logger.fatal('Failed to start scraper:', error);
+  logger.fatal('Failed to start category scraper:', error);
   process.exit(1);
 });
+
