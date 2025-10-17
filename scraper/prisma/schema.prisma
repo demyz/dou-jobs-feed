@@ -59,18 +59,33 @@ model JobCategory {
   subscriptions   UserSubscription[]
 }
 
+model Company {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs      Job[]
+}
+
 model Job {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
+  douId       Int         @unique
   title       String
   url         String
-  location    String
-  salary      String
-  category    JobCategory @relation(fields: [categoryId], references: [id])
+  companyId   String
+  company     Company     @relation(fields: [companyId], references: [id])
   categoryId  String
-  date        DateTime
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    JobCategory @relation(fields: [categoryId], references: [id])
+  description String      @db.Text
+  publishedAt DateTime
+  closedAt    DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([publishedAt])
 }
 
 // EXPORT JSON

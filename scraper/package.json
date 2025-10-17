@@ -11,6 +11,7 @@
     "build": "tsc",
     "start": "node --experimental-specifier-resolution=node dist/index.js",
     "task:categories": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx src/tasks/run-category-scraper.ts",
+    "task:jobs": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx src/tasks/run-jobs-scraper.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev"
@@ -32,6 +33,7 @@
     "cheerio": "^1.1.0",
     "dotenv": "^17.2.2",
     "pg": "^8.16.3",
-    "pino": "^9.11.0"
+    "pino": "^9.11.0",
+    "rss-parser": "^3.13.0"
   }
 }

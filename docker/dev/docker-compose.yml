@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: dou_jobs
+    ports:
+      - "5432:5432"
     volumes:
       - ../../db:/var/lib/postgresql/data
     healthcheck:
@@ -19,12 +21,31 @@ services:
     networks:
       - dou-jobs-network
 
-  scraper:
+  # scraper:
+  #   build:
+  #     context: ../..
+  #     dockerfile: docker/dev/Dockerfile.scraper
+  #   container_name: dou-jobs-scraper
+  #   restart: unless-stopped
+  #   environment:
+  #     DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
+  #     NODE_ENV: development
+  #   volumes:
+  #     - ../../scraper/src:/app/src
+  #     - ../../scraper/prisma:/app/prisma
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - dou-jobs-network
+
+  category-scraper:
     build:
       context: ../..
       dockerfile: docker/dev/Dockerfile.scraper
-    container_name: dou-jobs-scraper
-    restart: unless-stopped
+    container_name: dou-jobs-category-scraper
+    restart: "no"
+    command: npm run task:categories
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
       NODE_ENV: development
@@ -36,14 +57,16 @@ services:
         condition: service_healthy
     networks:
       - dou-jobs-network
+    profiles:
+      - cron
 
-  category-scraper:
+  jobs-scraper:
     build:
       context: ../..
       dockerfile: docker/dev/Dockerfile.scraper
-    container_name: dou-jobs-category-scraper
+    container_name: dou-jobs-jobs-scraper
     restart: "no"
-    command: npm run task:categories
+    command: npm run task:jobs
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
       NODE_ENV: development
