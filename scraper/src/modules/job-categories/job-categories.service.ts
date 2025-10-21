@@ -28,7 +28,9 @@ export class JobCategoriesService {
 
       const response = await axios.get(`${this.baseUrl}/`, {
         headers: {
-          'User-Agent': this.userAgent
+          'User-Agent': this.userAgent,
+          'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+          'Cookie': 'lang=en',
         }
       });
 

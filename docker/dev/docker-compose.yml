@@ -60,6 +60,27 @@ services:
     profiles:
       - cron
 
+  location-scraper:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.scraper
+    container_name: dou-jobs-location-scraper
+    restart: "no"
+    command: npm run task:locations
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
+      NODE_ENV: development
+    volumes:
+      - ../../scraper/src:/app/src
+      - ../../scraper/prisma:/app/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    profiles:
+      - cron
+
   jobs-scraper:
     build:
       context: ../..
