@@ -1,6 +1,7 @@
 import Parser from 'rss-parser';
 import { logger } from '@/core/logger/index';
 import { prisma } from '@/core/database/index';
+import { pageScraperService } from '@/core/page-scraper.service';
 import type { RSSJobItem, ParsedJobData } from './jobs.types';
 import type { JobCategory } from '@/shared/generated/prisma';
 
@@ -126,7 +127,7 @@ export class JobsService {
   /**
    * Parse RSS job item to structured data
    */
-  parseJobItem(item: RSSJobItem): ParsedJobData | null {
+  async parseJobItem(item: RSSJobItem): Promise<ParsedJobData | null> {
     try {
       const cleanedUrl = this.cleanUrl(item.link);
       const douId = this.extractDouIdFromUrl(cleanedUrl);
@@ -155,6 +156,21 @@ export class JobsService {
         publishedAt = new Date();
       }
 
+      // Scrape full description and locations from job page
+      let fullDescription: string | undefined;
+      let locations: string[] | undefined;
+
+      try {
+        const pageData = await pageScraperService.scrapeJobPage(cleanedUrl);
+        fullDescription = pageData.fullDescription || undefined;
+        locations = pageData.locations.length > 0 ? pageData.locations : undefined;
+      } catch (error) {
+        logger.warn('Failed to scrape job page, continuing without full description and locations', {
+          error,
+          url: cleanedUrl,
+        });
+      }
+
       return {
         douId,
         title: item.title,
@@ -162,11 +178,48 @@ export class JobsService {
         companySlug,
         companyName,
         description,
+        fullDescription,
+        locations,
         publishedAt,
       };
     } catch (error) {
       logger.error('Failed to parse job item', { error, item });
       return null;
+    }
+  }
+
+  /**
+   * Find or create location by name
+   * If location doesn't exist, create it with source 'job_parser'
+   */
+  async findOrCreateLocation(locationName: string): Promise<string> {
+    try {
+      // Create a simple slug from location name
+      const slug = locationName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+
+      const location = await prisma.location.upsert({
+        where: { slug },
+        create: {
+          name: locationName,
+          slug,
+          source: 'job_parser',
+          isActive: true,
+        },
+        update: {
+          name: locationName, // Update name if changed
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      return location.id;
+    } catch (error) {
+      logger.error('Failed to find or create location', { error, locationName });
+      throw error;
     }
   }
 
@@ -182,7 +235,7 @@ export class JobsService {
       );
 
       // Upsert job
-      await prisma.job.upsert({
+      const job = await prisma.job.upsert({
         where: { douId: jobData.douId },
         create: {
           douId: jobData.douId,
@@ -191,20 +244,59 @@ export class JobsService {
           companyId,
           categoryId,
           description: jobData.description,
+          fullDescription: jobData.fullDescription,
           publishedAt: jobData.publishedAt,
         },
         update: {
           title: jobData.title,
           url: jobData.url,
           description: jobData.description,
+          fullDescription: jobData.fullDescription,
           publishedAt: jobData.publishedAt,
           // Update company and category in case they changed
           companyId,
           categoryId,
         },
+        select: {
+          id: true,
+        },
       });
 
-      logger.debug('Job saved successfully', { douId: jobData.douId });
+      // Handle locations if provided
+      if (jobData.locations && jobData.locations.length > 0) {
+        // Delete existing job-location relationships
+        await prisma.jobLocation.deleteMany({
+          where: { jobId: job.id },
+        });
+
+        // Create new job-location relationships
+        for (const locationName of jobData.locations) {
+          try {
+            const locationId = await this.findOrCreateLocation(locationName);
+
+            await prisma.jobLocation.create({
+              data: {
+                jobId: job.id,
+                locationId,
+              },
+            });
+          } catch (error) {
+            logger.error('Failed to create job-location relationship', {
+              error,
+              jobId: job.id,
+              locationName,
+            });
+            // Continue with other locations
+          }
+        }
+
+        logger.debug('Job saved with locations', {
+          douId: jobData.douId,
+          locationsCount: jobData.locations.length,
+        });
+      } else {
+        logger.debug('Job saved successfully', { douId: jobData.douId });
+      }
     } catch (error) {
       logger.error('Failed to save job', { error, jobData });
       throw error;
@@ -232,7 +324,7 @@ export class JobsService {
 
       for (const item of items) {
         try {
-          const jobData = this.parseJobItem(item);
+          const jobData = await this.parseJobItem(item);
 
           if (!jobData) {
             errorCount++;

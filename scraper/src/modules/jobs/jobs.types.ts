@@ -15,6 +15,8 @@ export interface ParsedJobData {
   companySlug: string;
   companyName: string;
   description: string;
+  fullDescription?: string;
+  locations?: string[];
   publishedAt: Date;
 }
 

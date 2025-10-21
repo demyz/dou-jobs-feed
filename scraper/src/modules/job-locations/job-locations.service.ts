@@ -84,6 +84,7 @@ export class JobLocationsService {
         create: {
           name: location.name,
           slug: location.slug,
+          source: 'scraper',
           isActive: true,
         },
         update: {

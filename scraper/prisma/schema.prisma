@@ -14,6 +14,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum LocationSource {
+  scraper      // from run-location-scraper.sh
+  job_parser   // from job page parsing
+}
+
 model User {
   id            String  @id @default(uuid())
   telegramId    BigInt  @unique
@@ -60,12 +65,14 @@ model JobCategory {
 }
 
 model Location {
-  id        String   @id @default(uuid())
+  id        String         @id @default(uuid())
   name      String
-  slug      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  slug      String         @unique
+  source    LocationSource @default(scraper)
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  jobs      JobLocation[]
 }
 
 model Company {
@@ -78,19 +85,21 @@ model Company {
 }
 
 model Job {
-  id          String      @id @default(uuid())
-  douId       Int         @unique
-  title       String
-  url         String
-  companyId   String
-  company     Company     @relation(fields: [companyId], references: [id])
-  categoryId  String
-  category    JobCategory @relation(fields: [categoryId], references: [id])
-  description String      @db.Text
-  publishedAt DateTime
-  closedAt    DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id              String        @id @default(uuid())
+  douId           Int           @unique
+  title           String
+  url             String
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id])
+  categoryId      String
+  category        JobCategory   @relation(fields: [categoryId], references: [id])
+  description     String        @db.Text
+  fullDescription String?       @db.Text
+  publishedAt     DateTime
+  closedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  locations       JobLocation[]
 
   @@index([companyId])
   @@index([categoryId])
@@ -118,3 +127,15 @@ model Job {
 //     "date_published": "2025-10-10T12:04:43.000Z"
 // }
 
+model JobLocation {
+  id         String   @id @default(uuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([jobId, locationId])
+  @@index([jobId])
+  @@index([locationId])
+}
