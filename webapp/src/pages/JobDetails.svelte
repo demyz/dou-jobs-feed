@@ -32,6 +32,9 @@
     try {
       job = await api.getJob(jobId);
       loading = false;
+
+      // Show "Open on Dou" button
+      telegram.showMainButton('🔗 Open on Dou', openJob);
     } catch (err) {
       loading = false;
       error = err instanceof Error ? err.message : 'Failed to load job';
@@ -102,10 +105,6 @@
           {@html job.description}
         </div>
       {/if}
-
-      <button class="open-job-btn" on:click={openJob}>
-        🔗 Open on DOU.ua
-      </button>
     </article>
   {/if}
 </main>
@@ -204,22 +203,6 @@
   .description :global(a) {
     color: var(--tg-theme-link-color, #0088cc);
     text-decoration: none;
-  }
-
-  .open-job-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--tg-theme-button-color, #0088cc);
-    color: var(--tg-theme-button-text-color, #fff);
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-
-  .open-job-btn:active {
-    opacity: 0.8;
   }
 </style>
 
