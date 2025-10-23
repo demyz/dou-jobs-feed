@@ -1,0 +1,10 @@
+# Build output
+dist/
+
+# Public directory (built webapp)
+public/
+
+# Logs
+*.log
+
+

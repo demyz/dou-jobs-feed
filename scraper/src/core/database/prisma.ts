@@ -1,4 +1,4 @@
-import { PrismaClient } from '@/shared/generated/prisma';
+import { PrismaClient } from '@repo/database';
 import { logger } from '@/core/logger/index';
 
 // Prevent multiple instances of Prisma Client in development

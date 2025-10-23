@@ -5,25 +5,23 @@ RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy package files and tsconfig
-COPY scraper/package*.json ./
-COPY scraper/tsconfig.json ./
+# Copy root package.json and workspace package.json files
+COPY package*.json ./
+COPY packages/database/package*.json ./packages/database/
+COPY scraper/package*.json ./scraper/
 
 # Install dependencies
 RUN npm ci
 
-# Copy prisma schema
-COPY scraper/prisma ./prisma
-
-# Generate Prisma Client
+# Copy database package and generate Prisma client
+COPY packages/database/ ./packages/database/
 RUN npm run db:generate
 
-# Copy source code
-COPY scraper/src ./src
+# Copy scraper source
+COPY scraper/ ./scraper/
 
-# Expose port if needed (optional)
-# EXPOSE 3000
+# Set working directory to scraper
+WORKDIR /app/scraper
 
 # Run in development mode with hot reload
 CMD ["npm", "run", "dev"]
-

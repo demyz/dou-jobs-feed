@@ -21,23 +21,25 @@ services:
     networks:
       - dou-jobs-network
 
-  # scraper:
-  #   build:
-  #     context: ../..
-  #     dockerfile: docker/dev/Dockerfile.scraper
-  #   container_name: dou-jobs-scraper
-  #   restart: unless-stopped
-  #   environment:
-  #     DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
-  #     NODE_ENV: development
-  #   volumes:
-  #     - ../../scraper/src:/app/src
-  #     - ../../scraper/prisma:/app/prisma
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   networks:
-  #     - dou-jobs-network
+  bot:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.bot
+    container_name: dou-jobs-bot
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      API_PORT: 3000
+      WEBAPP_URL: ${WEBAPP_URL:-http://localhost:3000}
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
 
   category-scraper:
     build:
@@ -45,13 +47,14 @@ services:
       dockerfile: docker/dev/Dockerfile.scraper
     container_name: dou-jobs-category-scraper
     restart: "no"
+    working_dir: /app/scraper
     command: npm run task:categories
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
       NODE_ENV: development
     volumes:
-      - ../../scraper/src:/app/src
-      - ../../scraper/prisma:/app/prisma
+      - ../../scraper/src:/app/scraper/src
+      - ../../packages/database/prisma:/app/packages/database/prisma
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,13 +69,14 @@ services:
       dockerfile: docker/dev/Dockerfile.scraper
     container_name: dou-jobs-location-scraper
     restart: "no"
+    working_dir: /app/scraper
     command: npm run task:locations
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
       NODE_ENV: development
     volumes:
-      - ../../scraper/src:/app/src
-      - ../../scraper/prisma:/app/prisma
+      - ../../scraper/src:/app/scraper/src
+      - ../../packages/database/prisma:/app/packages/database/prisma
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,13 +91,34 @@ services:
       dockerfile: docker/dev/Dockerfile.scraper
     container_name: dou-jobs-jobs-scraper
     restart: "no"
+    working_dir: /app/scraper
     command: npm run task:jobs
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
       NODE_ENV: development
     volumes:
-      - ../../scraper/src:/app/src
-      - ../../scraper/prisma:/app/prisma
+      - ../../scraper/src:/app/scraper/src
+      - ../../packages/database/prisma:/app/packages/database/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    profiles:
+      - cron
+
+  notification-sender:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.bot
+    container_name: dou-jobs-notification-sender
+    restart: "no"
+    working_dir: /app/bot
+    command: npm run task:notify
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      NODE_ENV: development
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,13 +134,14 @@ services:
     container_name: dou-jobs-prisma-studio
     restart: unless-stopped
     command: npx prisma studio --port 5555 --browser none
+    working_dir: /app/packages/database
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dou_jobs?schema=public"
       NODE_ENV: development
     ports:
       - "5555:5555"
     volumes:
-      - ../../scraper/prisma:/app/prisma
+      - ../../packages/database/prisma:/app/packages/database/prisma
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,4 +152,3 @@ networks:
   dou-jobs-network:
     name: dou-jobs-dev-network
     driver: bridge
-

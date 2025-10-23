@@ -1,227 +1,304 @@
-# DOU Jobs Scraper
+# DOU Jobs Scraper & Telegram Bot
 
-A system for scraping job listings from [DOU.ua](https://jobs.dou.ua/) with subsequent notification delivery via Telegram bot.
+A complete system for scraping job listings from [DOU.ua](https://jobs.dou.ua/) and delivering notifications via Telegram bot with Web App interface.
 
-## Architecture
+## 🏗 Architecture
 
-The project consists of several modules:
-
-- **Scraper** - parsing jobs and categories from DOU.ua
-- **Bot** - Telegram bot for category subscriptions (in development)
-- **Database** - PostgreSQL database
-
-## Project Structure
+The project is built as a **monorepo** consisting of three main services:
 
 ```
-dou-jobs-scraper/
-├── scraper/              # Node.js scraper
+/
+├── packages/
+│   └── database/           # Shared Prisma database package
+│       └── prisma/
+├── scraper/                # Job scraping service
+│   └── src/
+├── bot/                    # Telegram Bot + API service
 │   ├── src/
-│   │   ├── modules/
-│   │   │   ├── job-categories/    # Category parsing
-│   │   │   └── jobs/              # Job parsing
-│   │   ├── tasks/                 # Tasks to run
-│   │   └── core/                  # Common utilities
-│   └── prisma/                    # Database schema
-├── bot/                  # Telegram bot (in development)
-├── docker/dev/          # Docker configuration for dev
-└── db/                  # PostgreSQL data
+│   │   ├── bot/           # Grammy bot logic
+│   │   ├── api/           # Express REST API
+│   │   ├── notifications/ # Notification sender
+│   │   └── shared/        # Config, logger
+│   └── public/            # Built webapp (served by API)
+├── webapp/                 # Telegram Web App (Svelte)
+│   └── src/
+│       ├── pages/         # Settings & JobDetails
+│       ├── components/    # CategoryItem, etc.
+│       └── lib/           # API client, Telegram SDK
+└── docker/dev/            # Docker configuration
 ```
 
-## Scrapers
+## 🚀 Features
 
-### 1. Category Scraper
+- **Job Scraping**: Automatic parsing of jobs from DOU.ua RSS feeds
+- **Category & Location Scraping**: Parse available categories and locations
+- **Telegram Bot**: Interactive bot with `/start` and `/settings` commands
+- **Web App Interface**: Modern Svelte-based UI for managing subscriptions
+- **Smart Subscriptions**: Subscribe to categories with optional location filters
+- **Notifications**: Receive new job postings based on your subscriptions
+- **Database**: PostgreSQL with Prisma ORM
+- **Docker Support**: Full containerization for easy deployment
 
-Parses the list of categories from DOU.ua and saves them to the database.
+## 📦 Services
 
-**Run frequency**: Once a day (categories rarely change)
+### 1. Database Package (`packages/database`)
 
-**Run**:
-```bash
-cd scraper
-npm run task:categories
-```
+Shared Prisma schema and client used by both scraper and bot services.
 
-**Docker**:
-```bash
-cd docker/dev
-./run-category-scraper.sh
-```
+**Models**:
+- `User` - Telegram users
+- `UserSettings` - User preferences
+- `UserSubscription` - Category subscriptions
+- `UserLocationSubscription` - Location filters for subscriptions
+- `JobCategory` - Job categories (Frontend, Backend, etc.)
+- `Location` - Job locations (cities)
+- `Company` - Companies
+- `Job` - Job listings
+- `JobLocation` - Job-location relationships
 
-Details: [CRON_SETUP.md](docker/dev/CRON_SETUP.md)
+### 2. Scraper Service (`scraper`)
 
-### 2. Jobs Scraper
+Parses jobs, categories, and locations from DOU.ua.
 
-Parses jobs from RSS feeds for all active categories.
+**Tasks**:
+- `task:categories` - Scrape categories (run once or when categories change)
+- `task:locations` - Scrape locations (run once or when locations change)
+- `task:jobs` - Scrape jobs from RSS feeds (run hourly)
 
-**Run frequency**: Every hour (recommended)
+### 3. Bot Service (`bot`)
 
-**Run**:
-```bash
-cd scraper
-npm run task:jobs
-```
+Telegram bot with integrated API server for Web App.
 
-**Docker**:
-```bash
-cd docker/dev
-./run-jobs-scraper.sh
-```
+**Components**:
+- **Grammy Bot**: Long polling Telegram bot
+- **Express API**: REST API for Web App
+- **Notification Service**: Sends job notifications to subscribed users
+- **Web App**: Served as static files from `/public`
 
-Details: [JOBS_SCRAPER_SETUP.md](docker/dev/JOBS_SCRAPER_SETUP.md)
+### 4. Web App (`webapp`)
 
-## Database
+Svelte-based Telegram Mini App for subscription management.
 
-### Models
+**Pages**:
+- **Settings**: Manage category and location subscriptions
+- **Job Details**: View full job description
 
-- **JobCategory** - job categories (Frontend, Backend, etc.)
-- **Company** - companies posting jobs
-- **Job** - job listings
-- **User** - Telegram bot users
-- **UserSubscription** - user subscriptions to categories
+## 🛠 Installation
 
-### Schema
-
-```prisma
-model JobCategory {
-  id              String
-  name            String
-  slug            String @unique
-  rssUrl          String
-  isActive        Boolean
-  jobs            Job[]
-  subscriptions   UserSubscription[]
-}
-
-model Company {
-  id        String
-  slug      String @unique
-  name      String
-  jobs      Job[]
-}
-
-model Job {
-  id          String
-  douId       Int @unique
-  title       String
-  url         String
-  companyId   String
-  categoryId  String
-  description String
-  publishedAt DateTime
-  closedAt    DateTime?
-}
-```
-
-## Installation and Setup
-
-### Requirements
+### Prerequisites
 
 - Node.js 20+
 - Docker and Docker Compose
-- PostgreSQL 16 (via Docker)
+- Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
 
-### Initial Setup
+### Step 1: Clone & Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd dou-jobs-scraper
-   ```
+```bash
+git clone <repository-url>
+cd dou-jobs-scraper
 
-2. **Set up environment**
-   ```bash
-   cd scraper
-   cp .env.example .env
-   # Edit .env if necessary
-   ```
+# Install dependencies for all workspaces
+npm install
+```
 
-3. **Start Docker containers**
-   ```bash
-   cd docker/dev
-   docker compose up -d postgres
-   ```
+### Step 2: Configure Environment
 
-4. **Install dependencies**
-   ```bash
-   cd scraper
-   npm install
-   ```
+Create `.env` file in the project root:
 
-5. **Apply database migrations**
-   ```bash
-   cd scraper
-   npm run db:push
-   # or
-   npm run db:migrate
-   ```
+```env
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/dou_jobs?schema=public
 
-6. **Run Category Scraper (first time)**
-   ```bash
-   npm run task:categories
-   ```
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=your_bot_token_here
 
-7. **Run Jobs Scraper**
-   ```bash
-   npm run task:jobs
-   ```
+# API Server
+API_PORT=3000
+WEBAPP_URL=https://your-domain.com
 
-### Development
+# Environment
+NODE_ENV=development
+```
 
-**Run Prisma Studio** (database viewer):
+**For local development**, use [ngrok](https://ngrok.com/) for HTTPS:
+```bash
+ngrok http 3000
+# Copy the HTTPS URL to WEBAPP_URL
+```
+
+See [TELEGRAM_BOT_SETUP.md](docker/dev/TELEGRAM_BOT_SETUP.md) for detailed bot configuration.
+
+### Step 3: Generate Prisma Client
+
+```bash
+npm run db:generate
+```
+
+### Step 4: Start Services
+
 ```bash
 cd docker/dev
-docker compose up prisma-studio
+docker compose up -d
 ```
 
-Open http://localhost:5555
+This starts:
+- `postgres` - PostgreSQL database
+- `bot` - Telegram bot + API server
+- `prisma-studio` - Database UI (http://localhost:5555)
 
-**Update database schema**:
+### Step 5: Initialize Data
+
+First time only - scrape categories and locations:
+
 ```bash
-cd scraper
-# Edit prisma/schema.prisma
-npm run db:generate
-npm run db:push
+cd docker/dev
+
+# Scrape categories
+docker compose --profile cron run --rm category-scraper
+
+# Scrape locations
+docker compose --profile cron run --rm location-scraper
 ```
 
-## Automation (Cron)
+### Step 6: Test the Bot
 
-### Setting up Automatic Execution
+1. Open your bot in Telegram
+2. Send `/start`
+3. Click "⚙️ Manage Subscriptions"
+4. Select categories and locations
+5. Save subscriptions
 
-1. Open crontab:
-   ```bash
-   crontab -e
-   ```
+## 🔄 Running Scrapers & Notifications
 
-2. Add jobs:
-   ```cron
-   # Category Scraper - once a day at 3:00 AM
-   0 3 * * * /Users/demyz/we/dou-jobs-scraper/docker/dev/run-category-scraper.sh >> /var/log/category-scraper.log 2>&1
+### Manual Execution
 
-   # Jobs Scraper - every hour
-   0 * * * * /Users/demyz/we/dou-jobs-scraper/docker/dev/run-jobs-scraper.sh >> /var/log/jobs-scraper.log 2>&1
-   ```
+```bash
+cd docker/dev
 
-## Technologies
+# Run jobs scraper + send notifications
+./run-scrape-and-notify.sh
+```
 
-- **Node.js** + **TypeScript** - main language
-- **Prisma** - ORM for database
-- **PostgreSQL** - database
-- **RSS Parser** - RSS feed parsing
-- **Cheerio** - HTML parsing
-- **Axios** - HTTP client
-- **Pino** - logging
-- **Docker** - containerization
+This script:
+1. Scrapes new jobs from DOU.ua
+2. Sends notifications to subscribed users
 
-## Roadmap
+### Automated Execution (Cron)
 
-- [x] Category parsing
-- [x] Job parsing
-- [ ] Check for closed jobs (via Company API)
-- [ ] Telegram bot for subscriptions
-- [ ] Send notifications about new jobs
-- [ ] Filter jobs by keywords
-- [ ] Web UI for subscription management
+Add to your crontab:
 
-## License
+```cron
+# Run every hour
+0 * * * * cd /path/to/dou-jobs-scraper/docker/dev && ./run-scrape-and-notify.sh >> /var/log/dou-jobs.log 2>&1
+```
+
+## 🔧 Development
+
+### Workspace Commands
+
+```bash
+# Generate Prisma client
+npm run db:generate
+
+# Push schema changes to database
+npm run db:push
+
+# Create migration
+npm run db:migrate
+
+# Run bot locally
+npm run -w bot dev
+
+# Run scraper task
+npm run -w scraper task:jobs
+
+# Build webapp
+npm run -w webapp build
+```
+
+### Docker Commands
+
+```bash
+cd docker/dev
+
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f bot
+docker compose logs -f postgres
+
+# Stop services
+docker compose down
+
+# Rebuild services
+docker compose build bot
+docker compose up -d bot
+```
+
+### Database Viewer
+
+Prisma Studio is automatically started and available at:
+```
+http://localhost:5555
+```
+
+## 📚 API Endpoints
+
+All endpoints require Telegram Web App `initData` authentication.
+
+```
+GET  /health                - Health check
+GET  /api/categories        - Get all active categories
+GET  /api/locations         - Get all active locations
+GET  /api/subscriptions     - Get user's subscriptions
+POST /api/subscriptions     - Save user's subscriptions
+GET  /api/jobs/:id          - Get job details
+```
+
+## 🎨 Tech Stack
+
+### Backend
+- **Node.js** + **TypeScript**
+- **Prisma** - Database ORM
+- **PostgreSQL** - Database
+- **Grammy** - Telegram Bot framework
+- **Express** - REST API
+- **Pino** - Logging
+
+### Frontend (Web App)
+- **Svelte 4** - UI framework
+- **Vite** - Build tool
+- **Telegram Web App SDK** - Telegram integration
+
+### Infrastructure
+- **Docker** + **Docker Compose**
+- **npm Workspaces** - Monorepo management
+
+## 📖 Documentation
+
+- [Telegram Bot Setup Guide](docker/dev/TELEGRAM_BOT_SETUP.md) - Detailed bot configuration
+- [Cron Setup](docker/dev/CRON_SETUP.md) - Scraper automation
+- [Jobs Scraper Setup](docker/dev/JOBS_SCRAPER_SETUP.md) - Scraper details
+
+## 🎯 Roadmap
+
+- [x] Category scraping
+- [x] Location scraping
+- [x] Job scraping from RSS
+- [x] Full description parsing from job pages
+- [x] Telegram bot with Web App
+- [x] Subscription management UI
+- [x] Smart notifications with filters
+- [ ] Check for closed jobs
+- [ ] Keyword filtering
+- [ ] Salary range filtering
+- [ ] Analytics dashboard
+
+## 📝 License
 
 MIT
+
+## 🤝 Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.

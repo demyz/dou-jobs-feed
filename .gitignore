@@ -1,3 +1,50 @@
-.cursor/
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
 db/
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Prisma
+**/node_modules/.prisma/
+packages/database/src/generated/
+
+# Scraper generated
+scraper/src/shared/generated/
+
+# Bot public (built webapp)
+bot/public/
+
+# Webapp build
+webapp/dist/

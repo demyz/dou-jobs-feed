@@ -1,0 +1,21 @@
+{
+  "name": "dou-jobs-scraper",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "scraper",
+    "bot",
+    "webapp"
+  ],
+  "scripts": {
+    "db:generate": "npm run -w @repo/database generate",
+    "db:push": "npm run -w @repo/database db:push",
+    "db:migrate": "npm run -w @repo/database db:migrate"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+
+

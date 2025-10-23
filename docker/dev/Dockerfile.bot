@@ -1,0 +1,52 @@
+# Stage 1: Build webapp
+FROM node:20-alpine AS webapp-builder
+
+WORKDIR /app
+
+# Copy root package.json and workspace package.json files
+COPY package*.json ./
+COPY webapp/package*.json ./webapp/
+
+# Install all dependencies
+RUN npm ci
+
+# Copy webapp source
+COPY webapp/ ./webapp/
+
+# Build webapp
+RUN npm run -w webapp build
+
+# Stage 2: Build bot service
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy root package.json and workspace package.json files
+COPY package*.json ./
+COPY packages/database/package*.json ./packages/database/
+COPY bot/package*.json ./bot/
+COPY scraper/package*.json ./scraper/
+
+# Install dependencies
+RUN npm ci
+
+# Copy database package and generate Prisma client
+COPY packages/database/ ./packages/database/
+RUN npm run db:generate
+
+# Copy bot source
+COPY bot/ ./bot/
+
+# Copy built webapp from previous stage
+COPY --from=webapp-builder /app/webapp/dist ./bot/public
+
+# Set working directory to bot
+WORKDIR /app/bot
+
+# Expose API port
+EXPOSE 3000
+
+# Start bot service in development mode (using tsx)
+CMD ["npm", "run", "dev"]
+
+

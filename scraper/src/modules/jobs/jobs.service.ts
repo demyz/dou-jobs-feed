@@ -3,7 +3,7 @@ import { logger } from '@/core/logger/index';
 import { prisma } from '@/core/database/index';
 import { pageScraperService } from '@/core/page-scraper.service';
 import type { RSSJobItem, ParsedJobData } from './jobs.types';
-import type { JobCategory } from '@/shared/generated/prisma';
+import type { JobCategory } from '@repo/database';
 
 export class JobsService {
   private readonly parser: Parser;

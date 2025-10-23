@@ -1,7 +1,6 @@
 {
-  "name": "dou-jobs-scraper",
+  "name": "scraper",
   "version": "0.1.0",
-  "main": "index.js",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -12,10 +11,7 @@
     "start": "node --experimental-specifier-resolution=node dist/index.js",
     "task:categories": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx src/tasks/run-category-scraper.ts",
     "task:locations": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx src/tasks/run-location-scraper.ts",
-    "task:jobs": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx src/tasks/run-jobs-scraper.ts",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev"
+    "task:jobs": "NODE_OPTIONS=--experimental-specifier-resolution=node tsx src/tasks/run-jobs-scraper.ts"
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
@@ -24,12 +20,11 @@
     "@types/pg": "^8.15.5",
     "nodemon": "^3.1.10",
     "pino-pretty": "^13.1.1",
-    "prisma": "^6.16.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.2",
+    "@repo/database": "*",
     "axios": "^1.12.2",
     "cheerio": "^1.1.0",
     "dotenv": "^17.2.2",

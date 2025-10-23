@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LocationSource {
+  scraper      // from run-location-scraper.sh
+  job_parser   // from job page parsing
+}
+
+model User {
+  id                     String               @id @default(uuid())
+  telegramId             BigInt               @unique
+  username               String?
+  firstName              String?
+  lastName               String?
+  languageCode           String?
+  isBot                  Boolean              @default(false)
+  lastSeenAt             DateTime?            @default(now())
+  lastNotificationSentAt DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  settings               UserSettings?
+  subscriptions          UserSubscription[]
+}
+
+model UserSettings {
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserSubscription {
+  id         String                      @id @default(uuid())
+  userId     String
+  user       User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   JobCategory                 @relation(fields: [categoryId], references: [id])
+  locations  UserLocationSubscription[]
+  createdAt  DateTime                    @default(now())
+  updatedAt  DateTime                    @updatedAt
+
+  @@unique([userId, categoryId])
+  @@index([userId])
+  @@index([categoryId])
+}
+
+model UserLocationSubscription {
+  id                     String           @id @default(uuid())
+  categorySubscriptionId String
+  categorySubscription   UserSubscription @relation(fields: [categorySubscriptionId], references: [id], onDelete: Cascade)
+  locationId             String
+  location               Location         @relation(fields: [locationId], references: [id])
+  createdAt              DateTime         @default(now())
+
+  @@unique([categorySubscriptionId, locationId])
+  @@index([categorySubscriptionId])
+  @@index([locationId])
+}
+
+model JobCategory {
+  id            String             @id @default(uuid())
+  name          String
+  slug          String             @unique
+  url           String
+  rssUrl        String
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  jobs          Job[]
+  subscriptions UserSubscription[]
+}
+
+model Location {
+  id            String                       @id @default(uuid())
+  name          String
+  slug          String                       @unique
+  source        LocationSource               @default(scraper)
+  isActive      Boolean                      @default(true)
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
+  jobs          JobLocation[]
+  subscriptions UserLocationSubscription[]
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs      Job[]
+}
+
+model Job {
+  id              String        @id @default(uuid())
+  douId           Int           @unique
+  title           String
+  url             String
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id])
+  categoryId      String
+  category        JobCategory   @relation(fields: [categoryId], references: [id])
+  description     String        @db.Text
+  fullDescription String?       @db.Text
+  publishedAt     DateTime
+  closedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  locations       JobLocation[]
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([publishedAt])
+}
+
+model JobLocation {
+  id         String   @id @default(uuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([jobId, locationId])
+  @@index([jobId])
+  @@index([locationId])
+}
+
+
