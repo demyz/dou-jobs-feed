@@ -14,6 +14,9 @@
   onMount(async () => {
     telegram.initTelegram();
 
+    // Setup Main Button
+    telegram.showMainButton('💾 Save', handleSave);
+
     try {
       // Load data in parallel
       const [categoriesData, locationsData, subscriptionsData] = await Promise.all([
@@ -32,9 +35,6 @@
       }));
 
       loading = false;
-
-      // Setup Main Button
-      telegram.showMainButton('💾 Save', handleSave);
     } catch (err) {
       loading = false;
       error = err instanceof Error ? err.message : 'Failed to load data';

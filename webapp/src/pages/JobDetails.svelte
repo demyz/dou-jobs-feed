@@ -17,6 +17,9 @@
       telegram.closeApp();
     });
 
+    // Show "Open on Dou" button
+    telegram.showMainButton('🔗 Dou', openJob);
+
     // Get jobId from hash (#/job/123)
     const hash = window.location.hash;
     const match = hash.match(/#\/job\/(.+)/);
@@ -32,9 +35,6 @@
     try {
       job = await api.getJob(jobId);
       loading = false;
-
-      // Show "Open on Dou" button
-      telegram.showMainButton('🔗 Open on Dou', openJob);
     } catch (err) {
       loading = false;
       error = err instanceof Error ? err.message : 'Failed to load job';
@@ -48,13 +48,19 @@
     }
   }
 
+  function getCompanyUrl(companySlug: string): string {
+    return `https://jobs.dou.ua/companies/${companySlug}/`;
+  }
+
+  function openCompany() {
+    if (job) {
+      telegram.openLink(getCompanyUrl(job.company.slug));
+    }
+  }
+
   function formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('uk-UA', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
+    return date.toLocaleString('uk-UA');
   }
 </script>
 
@@ -74,24 +80,28 @@
 
       <div class="meta">
         <div class="meta-item">
-          <span class="label">🏢 Company:</span>
-          <span class="value">{job.company.name}</span>
+          <span class="label" title="Company">🏢</span>
+          <span class="value">
+            <a href={getCompanyUrl(job.company.slug)} on:click|preventDefault={openCompany} title="Open company page">
+              {job.company.name}
+            </a>
+          </span>
         </div>
 
         <div class="meta-item">
-          <span class="label">📂 Category:</span>
+          <span class="label" title="Category">📂</span>
           <span class="value">{job.category.name}</span>
         </div>
 
         <div class="meta-item">
-          <span class="label">📍 Locations:</span>
+          <span class="label" title="Locations">📍</span>
           <span class="value">
             {job.locations.map(l => l.name).join(', ') || 'Not specified'}
           </span>
         </div>
 
         <div class="meta-item">
-          <span class="label">📅 Published:</span>
+          <span class="label" title="Published">📅</span>
           <span class="value">{formatDate(job.publishedAt)}</span>
         </div>
       </div>
