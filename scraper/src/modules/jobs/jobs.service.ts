@@ -236,6 +236,7 @@ export class JobsService {
         url: cleanedUrl,
         companySlug: pageData.companySlug,
         companyName: pageData.companyName,
+        companyLogoUrl: pageData.companyLogoUrl,
         description,
         fullDescription: pageData.fullDescription,
         locations: pageData.locations,
@@ -251,16 +252,18 @@ export class JobsService {
   /**
    * Find or create company in database
    */
-  async findOrCreateCompany(slug: string, name: string): Promise<string> {
+  async findOrCreateCompany(slug: string, name: string, logoUrl?: string): Promise<string> {
     try {
       const company = await prisma.company.upsert({
         where: { slug },
         create: {
           slug,
           name,
+          logoUrl,
         },
         update: {
           name, // Update name in case it changed
+          logoUrl, // Update logo URL in case it changed
         },
         select: {
           id: true,
@@ -318,7 +321,8 @@ export class JobsService {
       // Find or create company
       const companyId = await this.findOrCreateCompany(
         jobData.companySlug,
-        jobData.companyName
+        jobData.companyName,
+        jobData.companyLogoUrl
       );
 
       // Check if job already exists

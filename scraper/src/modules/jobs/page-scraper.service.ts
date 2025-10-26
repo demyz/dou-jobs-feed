@@ -6,6 +6,7 @@ export interface JobPageData {
   title: string;
   companyName: string;
   companySlug: string;
+  companyLogoUrl?: string;
   fullDescription: string;
   locations: string[];
   salary?: string;
@@ -69,7 +70,7 @@ export class PageScraperService {
    * Selector: .b-compinfo .l-n a:first-child
    * Returns company name and slug extracted from href
    */
-  parseCompany($: cheerio.CheerioAPI): { name: string; slug: string } {
+  parseCompany($: cheerio.CheerioAPI): { name: string; slug: string; logoUrl?: string } {
     try {
       const companyLink = $('.b-compinfo .l-n a:first-child');
       const name = companyLink.text().trim();
@@ -79,11 +80,22 @@ export class PageScraperService {
       const slugMatch = href.match(/\/companies\/([^/]+)\//);
       const slug = slugMatch ? slugMatch[1] : '';
 
+      // Parse logo URL
+      const logoImg = $('.b-compinfo .logo img');
+      let logoUrl = logoImg.attr('src');
+
+      // Convert relative URLs to absolute
+      if (logoUrl && !logoUrl.startsWith('http')) {
+        logoUrl = logoUrl.startsWith('//')
+          ? `https:${logoUrl}`
+          : `https://jobs.dou.ua${logoUrl}`;
+      }
+
       if (!name || !slug) {
         logger.warn('Could not find company name or slug on page', { name, slug, href });
       }
 
-      return { name, slug };
+      return { name, slug, logoUrl };
     } catch (error) {
       logger.error('Failed to parse company', { error });
       return { name: 'Unknown Company', slug: 'unknown' };
@@ -195,6 +207,7 @@ export class PageScraperService {
         title,
         companyName: company.name,
         companySlug: company.slug,
+        companyLogoUrl: company.logoUrl,
         salary,
         fullDescription,
         locations,
