@@ -13,19 +13,21 @@ export class JobLocationsService {
   private readonly baseUrl: string;
   private readonly userAgent: string;
   private readonly selector: string;
+  private readonly locationsUrl: string;
 
   constructor() {
     this.baseUrl = config.baseUrl;
     this.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
     this.selector = '.b-region-filter ul:nth-of-type(2) a';
+    this.locationsUrl = `${this.baseUrl}/vacancies`;
   }
 
   async scrapeLocations(): Promise<Location[]> {
     try {
-      logger.info('Fetching locations from DOU.ua', { baseUrl: this.baseUrl });
+      logger.info('Fetching locations from DOU.ua', { locationsUrl: this.locationsUrl });
 
-      // Use a category page to get locations (using Front End as example)
-      const response = await axios.get(`${this.baseUrl}/vacancies/?category=Front%20End`, {
+      // Use jobs page to get all locations
+      const response = await axios.get(this.locationsUrl, {
         headers: {
           'User-Agent': this.userAgent,
           'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
@@ -43,15 +45,27 @@ export class JobLocationsService {
         const href = $link.attr('href');
 
         if (name && href) {
-          // Extract city parameter from URL
-          // Example: /vacancies/?city=Київ or /vacancies/?city=віддалена робота
+          // Extract location parameter from URL
+          // Example: /vacancies/?city=Kyiv or /vacancies/?remote or /vacancies/?relocation
           const urlParams = new URLSearchParams(href.split('?')[1] || '');
           const cityParam = urlParams.get('city');
+          const remoteParam = urlParams.has('remote');
+          const relocationParam = urlParams.has('relocation');
+
+          let slug: string | null = null;
 
           if (cityParam) {
+            slug = cityParam;
+          } else if (remoteParam) {
+            slug = 'remote';
+          } else if (relocationParam) {
+            slug = 'relocation';
+          }
+
+          if (slug) {
             locations.push({
               name,
-              slug: cityParam,
+              slug,
             });
           }
         }
