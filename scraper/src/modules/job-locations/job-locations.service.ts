@@ -37,7 +37,16 @@ export class JobLocationsService {
 
       const $ = cheerio.load(response.data);
 
-      const locations: Location[] = [];
+      const locations: Location[] = [
+        {
+          name: 'remote',
+          slug: 'remote',
+        },
+        {
+          name: 'abroad',
+          slug: 'relocation',
+        },
+      ];
 
       $(this.selector).each((_index, element) => {
         const $link = $(element);
@@ -46,21 +55,9 @@ export class JobLocationsService {
 
         if (name && href) {
           // Extract location parameter from URL
-          // Example: /vacancies/?city=Kyiv or /vacancies/?remote or /vacancies/?relocation
+          // Example: /vacancies/?city=Kyiv
           const urlParams = new URLSearchParams(href.split('?')[1] || '');
-          const cityParam = urlParams.get('city');
-          const remoteParam = urlParams.has('remote');
-          const relocationParam = urlParams.has('relocation');
-
-          let slug: string | null = null;
-
-          if (cityParam) {
-            slug = cityParam;
-          } else if (remoteParam) {
-            slug = 'remote';
-          } else if (relocationParam) {
-            slug = 'relocation';
-          }
+          const slug = urlParams.get('city');
 
           if (slug) {
             locations.push({
