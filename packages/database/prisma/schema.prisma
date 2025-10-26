@@ -67,16 +67,16 @@ model UserLocationSubscription {
 }
 
 model JobCategory {
-  id            String             @id @default(uuid())
-  name          String
-  slug          String             @unique
-  url           String
-  rssUrl        String
-  isActive      Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  jobs          Job[]
-  subscriptions UserSubscription[]
+  id                  String             @id @default(uuid())
+  name                String
+  slug                String             @unique
+  url                 String
+  rssUrl              String
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  jobs                Job[]
+  subscriptions       UserSubscription[]
 }
 
 model Location {
@@ -111,6 +111,7 @@ model Job {
   category        JobCategory   @relation(fields: [categoryId], references: [id])
   description     String        @db.Text
   fullDescription String?       @db.Text
+  salary          String?
   publishedAt     DateTime
   closedAt        DateTime?
   createdAt       DateTime      @default(now())
@@ -133,6 +134,25 @@ model JobLocation {
   @@unique([jobId, locationId])
   @@index([jobId])
   @@index([locationId])
+}
+
+model ScraperSession {
+  id                  String    @id @default(uuid())
+  lastProcessedDouId  Int?
+  totalJobsProcessed  Int       @default(0)
+  totalJobsAdded      Int       @default(0)
+  totalJobsUpdated    Int       @default(0)
+  totalErrors         Int       @default(0)
+  categoriesProcessed Int       @default(0)
+  status              String    // 'success', 'failed', 'partial'
+  startedAt           DateTime  @default(now())
+  completedAt         DateTime?
+  durationMs          Int?
+  errorDetails        String?   @db.Text
+  createdAt           DateTime  @default(now())
+
+  @@index([startedAt])
+  @@index([status])
 }
 
 
