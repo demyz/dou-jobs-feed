@@ -8,6 +8,7 @@ WORKDIR /app
 # Copy root package.json and workspace package.json files
 COPY package*.json ./
 COPY packages/database/package*.json ./packages/database/
+COPY packages/logger/package*.json ./packages/logger/
 COPY scraper/package*.json ./scraper/
 
 # Install dependencies
@@ -16,6 +17,10 @@ RUN npm ci
 # Copy database package and generate Prisma client
 COPY packages/database/ ./packages/database/
 RUN npm run db:generate
+
+# Copy and build shared logger package
+COPY packages/logger/ ./packages/logger/
+RUN npm run -w @repo/logger build
 
 # Copy scraper source
 COPY scraper/ ./scraper/

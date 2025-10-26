@@ -6,6 +6,8 @@ import { logger } from '../shared/logger.js';
 import type { JobWithRelations } from '../bot/types.js';
 
 export class NotificationsService {
+  private readonly sendMessageSleepMs = 50;
+
   /**
    * Send new job notifications to all subscribed users
    */
@@ -113,13 +115,13 @@ export class NotificationsService {
               await bot.api.sendMessage(Number(user.telegramId), message, {
                 parse_mode: 'HTML',
                 reply_markup: keyboard,
-                disable_web_page_preview: true,
+                link_preview_options: { is_disabled: true },
               });
 
               totalSent++;
 
               // Rate limiting: ~20 msg/sec to be safe (Telegram allows ~30/sec)
-              await this.sleep(50);
+              await this.sleep(this.sendMessageSleepMs);
             } catch (error) {
               logger.error('Failed to send job to user', {
                 userId: user.id,

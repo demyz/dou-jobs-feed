@@ -9,6 +9,7 @@
     "task:notify": "tsx src/notifications/run-notification-sender.ts"
   },
   "dependencies": {
+    "@repo/logger": "*",
     "@repo/database": "*",
     "grammy": "^1.23.0",
     "express": "^4.19.2",
