@@ -104,14 +104,20 @@ export class JobsService {
         return false;
       }
 
-      // Get the first (newest) job's douId
-      const firstJobUrl = this.cleanUrl(items[0].link);
-      const firstJobDouId = this.extractDouIdFromUrl(firstJobUrl);
+      // Find max douId across all items in the feed
+      const feedDouIds = items
+        .map((item) => {
+          const cleanedUrl = this.cleanUrl(item.link);
+          return this.extractDouIdFromUrl(cleanedUrl);
+        })
+        .filter((id): id is number => typeof id === 'number');
 
-      if (!firstJobDouId) {
-        logger.warn('Could not extract douId from first job URL', { url: firstJobUrl });
+      if (feedDouIds.length === 0) {
+        logger.warn('Could not extract any douId from RSS items');
         return true; // Assume there are new jobs if we can't parse
       }
+
+      const maxFeedDouId = Math.max(...feedDouIds);
 
       // Get max douId from database
       const maxDouIdResult = await prisma.job.findFirst({
@@ -122,12 +128,12 @@ export class JobsService {
       const maxDouId = maxDouIdResult?.douId || 0;
 
       logger.info('Global RSS check result', {
-        firstJobDouId,
+        maxFeedDouId,
         maxDouId,
-        hasNewJobs: firstJobDouId > maxDouId,
+        hasNewJobs: maxFeedDouId > maxDouId,
       });
 
-      return firstJobDouId > maxDouId;
+      return maxFeedDouId > maxDouId;
     } catch (error) {
       logger.error('Failed to check for new jobs', { error });
       // Return true to continue processing in case of error

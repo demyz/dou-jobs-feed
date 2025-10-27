@@ -103,14 +103,6 @@ Check that cron is configured correctly:
 crontab -l
 ```
 
-## Schedule Recommendations
-
-- **Frequent parsing (every 30 minutes)**: To get new jobs as quickly as possible
-- **Medium parsing (every hour)**: Balance between freshness and server load
-- **Rare parsing (every 2-3 hours)**: To minimize load
-
-**Recommended schedule**: Every hour (0 * * * *)
-
 ## Important
 
 - Make sure the script path is absolute
