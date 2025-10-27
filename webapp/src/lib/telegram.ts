@@ -1,5 +1,9 @@
 import WebApp from '@twa-dev/sdk';
 
+// Track current button handlers to properly detach them between pages
+let currentMainButtonHandler: (() => void) | null = null;
+let currentBackButtonHandler: (() => void) | null = null;
+
 /**
  * Initialize Telegram Web App
  */
@@ -24,8 +28,14 @@ export function getTelegramInitData(): string {
  * Show Back Button
  */
 export function showBackButton(callback: () => void) {
+  // Detach previous handler if any
+  if (currentBackButtonHandler) {
+    WebApp.BackButton.offClick(currentBackButtonHandler);
+  }
+
   WebApp.BackButton.show();
   WebApp.BackButton.onClick(callback);
+  currentBackButtonHandler = callback;
 }
 
 /**
@@ -33,15 +43,25 @@ export function showBackButton(callback: () => void) {
  */
 export function hideBackButton() {
   WebApp.BackButton.hide();
+  if (currentBackButtonHandler) {
+    WebApp.BackButton.offClick(currentBackButtonHandler);
+    currentBackButtonHandler = null;
+  }
 }
 
 /**
  * Show Main Button
  */
 export function showMainButton(text: string, callback: () => void) {
+  // Detach previous handler if any
+  if (currentMainButtonHandler) {
+    WebApp.MainButton.offClick(currentMainButtonHandler);
+  }
+
   WebApp.MainButton.setText(text);
   WebApp.MainButton.show();
   WebApp.MainButton.onClick(callback);
+  currentMainButtonHandler = callback;
 }
 
 /**
@@ -49,6 +69,10 @@ export function showMainButton(text: string, callback: () => void) {
  */
 export function hideMainButton() {
   WebApp.MainButton.hide();
+  if (currentMainButtonHandler) {
+    WebApp.MainButton.offClick(currentMainButtonHandler);
+    currentMainButtonHandler = null;
+  }
 }
 
 /**

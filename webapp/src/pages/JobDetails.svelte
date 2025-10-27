@@ -45,6 +45,7 @@
   function openJob() {
     if (job) {
       telegram.openLink(job.url);
+      telegram.closeApp();
     }
   }
 
@@ -159,6 +160,7 @@
     font-weight: 600;
     line-height: 1.3;
     margin-bottom: 16px;
+    margin-top: 0;
   }
 
   .meta {
@@ -179,11 +181,16 @@
 
   .meta-item .label {
     font-weight: 500;
-    min-width: 100px;
+    /* min-width: 100px; */
   }
 
   .meta-item .value {
     color: var(--tg-theme-hint-color, #666);
+  }
+
+  .meta-item .value a {
+    color: var(--tg-theme-link-color, #0088cc);
+    text-decoration: none;
   }
 
   .description {
