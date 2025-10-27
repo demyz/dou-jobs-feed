@@ -10,6 +10,9 @@
   let subscriptions: Array<{ categoryId: string; locationIds: string[] }> = [];
   let loading = true;
   let error = '';
+  let categoryQuery: string = '';
+  let filteredCategories: Category[] = [];
+  let normalizedQuery: string = '';
 
   onMount(async () => {
     telegram.initTelegram();
@@ -47,9 +50,7 @@
 
     try {
       await api.saveSubscriptions(subscriptions);
-      telegram.showAlert('Subscriptions saved!', () => {
-        telegram.closeApp();
-      });
+      telegram.closeApp();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to save subscriptions';
       telegram.showAlert(errorMsg);
@@ -57,6 +58,11 @@
       telegram.hideMainButtonProgress();
     }
   }
+
+  $: normalizedQuery = categoryQuery.trim().toLowerCase();
+  $: filteredCategories = normalizedQuery
+    ? categories.filter((c) => c.name.toLowerCase().includes(normalizedQuery))
+    : categories;
 </script>
 
 <main>
@@ -72,14 +78,20 @@
     </div>
   {:else}
     <div class="settings">
-      <h1>📋 Manage Subscriptions</h1>
-      <p class="description">
-        Choose the categories you're interested in and optionally select specific locations.
-        If no locations are selected for a category, you'll receive all jobs from that category.
-      </p>
+      <h1>Subscriptions</h1>
+
+      <div class="search">
+        <input
+          type="text"
+          placeholder="Search categories"
+          bind:value={categoryQuery}
+          autocomplete="off"
+          inputmode="search"
+        />
+      </div>
 
       <div class="categories-list">
-        {#each categories as category}
+        {#each filteredCategories as category}
           <CategoryItem
             {category}
             {locations}
@@ -147,14 +159,27 @@
   h1 {
     font-size: 24px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 20px;
+    margin-top: 0;
   }
 
-  .description {
-    font-size: 14px;
-    color: var(--tg-theme-hint-color, #999);
+  .search {
     margin-bottom: 20px;
-    line-height: 1.5;
+  }
+
+  .search input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--tg-theme-hint-color, #ccc);
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    color: var(--tg-theme-text-color, #000);
+    outline: none;
+  }
+
+  .search input::placeholder {
+    color: var(--tg-theme-hint-color, #999);
   }
 
   .categories-list {
