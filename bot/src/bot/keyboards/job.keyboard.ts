@@ -14,10 +14,5 @@ export function createJobKeyboard(job: JobWithRelations): InlineKeyboard {
     `${config.webAppUrl}/#/job/${job.id}`
   );
 
-  // Open job button - external link
-  keyboard.url('🔗 Dou', job.url);
-
   return keyboard;
 }
-
-

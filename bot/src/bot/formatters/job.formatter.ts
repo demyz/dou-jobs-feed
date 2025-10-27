@@ -4,22 +4,15 @@ import type { JobWithRelations } from '../types.js';
  * Format job for Telegram message (short version)
  */
 export function formatJobMessage(job: JobWithRelations): string {
-  const locationNames = job.locations.map((jl) => jl.location.name).join(', ');
-  const publishDate = new Date(job.publishedAt).toLocaleDateString('uk-UA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  const companyPart = job.company.name ? ` <i>${escapeHtml(job.company.name)}.</i>` : '';
+  const salaryPart = job.salary ? ` ${escapeHtml(job.salary)}` : '';
+  const shortText = truncateText(stripHtml(job.description), 220);    // ${escapeHtml(truncateText(stripHtml(job.description), 200))}
 
   return `
-<b>${escapeHtml(job.title)}</b>
+<b>${escapeHtml(job.title)}.${companyPart}${salaryPart}</b>
 
-🏢 <b>Company:</b> ${escapeHtml(job.company.name)}
-📂 <b>Category:</b> ${escapeHtml(job.category.name)}
-📍 <b>Location:</b> ${escapeHtml(locationNames || 'Not specified')}
-📅 <b>Published:</b> ${publishDate}
-
-${escapeHtml(truncateText(stripHtml(job.description), 200))}
+${escapeHtml(shortText)}
+<a href="${job.url}">${job.url}</a>
   `.trim();
 }
 

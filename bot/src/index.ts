@@ -10,7 +10,6 @@ async function main() {
   try {
     logger.info('='.repeat(50));
     logger.info('Starting DOU Jobs Bot Service');
-    logger.info('='.repeat(50));
 
     // Start API server
     const app = createApiServer();
@@ -24,7 +23,6 @@ async function main() {
     await bot.start();
     logger.info('Telegram bot started successfully');
 
-    logger.info('='.repeat(50));
     logger.info('DOU Jobs Bot Service is running');
     logger.info('='.repeat(50));
   } catch (error) {
