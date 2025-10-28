@@ -1,10 +1,11 @@
 import { logger } from '@/core/logger/index';
-import { jobLocationsService } from '@/modules/job-locations/job-locations.service';
+import { createScraperContainer } from '@/container';
 
 async function main() {
   logger.info('Starting Location Scraper...');
 
-  await jobLocationsService.runLocationScraper();
+  const container = createScraperContainer();
+  await container.jobLocationsService.runLocationScraper();
 
   logger.info('Location Scraper finished successfully');
 }

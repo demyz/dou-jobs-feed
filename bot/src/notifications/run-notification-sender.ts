@@ -1,4 +1,4 @@
-import { notificationsService } from './notifications.service.js';
+import { createBotContainer } from '../container.js';
 import { logger } from '../shared/logger.js';
 
 /**
@@ -10,7 +10,8 @@ async function main() {
     logger.info('Notification Sender Task Started');
     logger.info('='.repeat(50));
 
-    await notificationsService.sendNewJobNotifications();
+    const container = createBotContainer();
+    await container.notificationsService.sendNewJobNotifications();
 
     logger.info('='.repeat(50));
     logger.info('Notification Sender Task Completed Successfully');

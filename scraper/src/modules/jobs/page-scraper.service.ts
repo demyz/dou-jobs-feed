@@ -219,5 +219,3 @@ export class PageScraperService {
   }
 }
 
-export const pageScraperService = new PageScraperService();
-

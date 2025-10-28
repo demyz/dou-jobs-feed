@@ -1,5 +1,6 @@
-import { prisma } from '@repo/database';
-import { bot } from '../bot/bot.js';
+import type { PrismaClient } from '@repo/database';
+import type { Bot } from 'grammy';
+import type { BotContext } from '../bot/types.js';
 import { formatJobMessage } from '../bot/formatters/job.formatter.js';
 import { createJobKeyboard } from '../bot/keyboards/job.keyboard.js';
 import { logger } from '../shared/logger.js';
@@ -7,6 +8,11 @@ import type { JobWithRelations } from '../bot/types.js';
 
 export class NotificationsService {
   private readonly sendMessageSleepMs = 50;
+
+  constructor(
+    private readonly bot: Bot<BotContext>,
+    private readonly prisma: PrismaClient
+  ) {}
 
   /**
    * Send new job notifications to all subscribed users
@@ -16,7 +22,7 @@ export class NotificationsService {
 
     try {
       // 1. Get oldest check timestamp among all users with subscriptions
-      const oldestUser = await prisma.user.findFirst({
+      const oldestUser = await this.prisma.user.findFirst({
         where: {
           subscriptions: {
             some: {}, // has at least one subscription
@@ -32,7 +38,7 @@ export class NotificationsService {
       logger.info('Fetching new jobs', { fromDate });
 
       // 2. Fetch all new jobs in one query
-      const newJobs = await prisma.job.findMany({
+      const newJobs = await this.prisma.job.findMany({
         where: {
           publishedAt: {
             gt: fromDate,
@@ -60,7 +66,7 @@ export class NotificationsService {
       }
 
       // 3. Get all users with subscriptions
-      const users = await prisma.user.findMany({
+      const users = await this.prisma.user.findMany({
         where: {
           subscriptions: {
             some: {},
@@ -112,7 +118,7 @@ export class NotificationsService {
               const message = formatJobMessage(job as JobWithRelations);
               const keyboard = createJobKeyboard(job as JobWithRelations);
 
-              await bot.api.sendMessage(Number(user.telegramId), message, {
+              await this.bot.api.sendMessage(Number(user.telegramId), message, {
                 parse_mode: 'HTML',
                 reply_markup: keyboard,
                 link_preview_options: { is_disabled: true },
@@ -133,7 +139,7 @@ export class NotificationsService {
           }
 
           // Update last notification time for user
-          await prisma.user.update({
+          await this.prisma.user.update({
             where: { id: user.id },
             data: { lastNotificationSentAt: new Date() },
           });
@@ -205,7 +211,5 @@ export class NotificationsService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-
-export const notificationsService = new NotificationsService();
 
 

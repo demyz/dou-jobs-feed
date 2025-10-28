@@ -1,8 +1,8 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import type { PrismaClient } from '@repo/database';
 import { logger } from '@/core/logger/index';
 import { config } from '@/config/index';
-import { prisma } from '@/core/database/index';
 
 interface Location {
   name: string;
@@ -10,17 +10,12 @@ interface Location {
 }
 
 export class JobLocationsService {
-  private readonly baseUrl: string;
-  private readonly userAgent: string;
-  private readonly selector: string;
-  private readonly locationsUrl: string;
+  private readonly baseUrl = config.baseUrl;
+  private readonly userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+  private readonly selector = '.b-region-filter ul:nth-of-type(2) a';
+  private readonly locationsUrl = `${this.baseUrl}/vacancies`;
 
-  constructor() {
-    this.baseUrl = config.baseUrl;
-    this.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-    this.selector = '.b-region-filter ul:nth-of-type(2) a';
-    this.locationsUrl = `${this.baseUrl}/vacancies`;
-  }
+  constructor(private readonly prisma: PrismaClient) {}
 
   async scrapeLocations(): Promise<Location[]> {
     try {
@@ -83,14 +78,14 @@ export class JobLocationsService {
 
     // Get all existing slugs to track new vs updated
     const existingSlugs = new Set(
-      (await prisma.location.findMany({ select: { slug: true } }))
+      (await this.prisma.location.findMany({ select: { slug: true } }))
         .map(l => l.slug)
     );
 
     for (const location of locations) {
       const isNew = !existingSlugs.has(location.slug);
 
-      await prisma.location.upsert({
+      await this.prisma.location.upsert({
         where: { slug: location.slug },
         create: {
           name: location.name,
@@ -136,6 +131,4 @@ export class JobLocationsService {
     }
   }
 }
-
-export const jobLocationsService = new JobLocationsService();
 

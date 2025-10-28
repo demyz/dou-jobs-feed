@@ -1,7 +1,7 @@
 import Parser from 'rss-parser';
+import type { PrismaClient } from '@repo/database';
 import { logger } from '@/core/logger/index';
-import { prisma } from '@/core/database/index';
-import { pageScraperService } from './page-scraper.service';
+import type { PageScraperService } from './page-scraper.service';
 import type { RSSJobItem, ParsedJobData } from './jobs.types';
 import type { JobCategory } from '@repo/database';
 
@@ -17,7 +17,10 @@ export class JobsService {
   private readonly parser: Parser;
   private readonly globalRssUrl = 'https://jobs.dou.ua/vacancies/feeds/';
 
-  constructor() {
+  constructor(
+    private readonly pageScraperService: PageScraperService,
+    private readonly prisma: PrismaClient
+  ) {
     this.parser = new Parser({
       customFields: {
         item: [
@@ -120,7 +123,7 @@ export class JobsService {
       const maxFeedDouId = Math.max(...feedDouIds);
 
       // Get max douId from database
-      const maxDouIdResult = await prisma.job.findFirst({
+      const maxDouIdResult = await this.prisma.job.findFirst({
         select: { douId: true },
         orderBy: { douId: 'desc' },
       });
@@ -146,7 +149,7 @@ export class JobsService {
    */
   async getActiveCategories(): Promise<JobCategory[]> {
     try {
-      const categories = await prisma.jobCategory.findMany({
+      const categories = await this.prisma.jobCategory.findMany({
         where: { isActive: true },
         orderBy: { name: 'asc' },
       });
@@ -166,7 +169,7 @@ export class JobsService {
   async getUnprocessedJobsForCategory(category: JobCategory): Promise<RSSJobItem[]> {
     try {
       // Get max douId from database (globally)
-      const maxDouIdResult = await prisma.job.findFirst({
+      const maxDouIdResult = await this.prisma.job.findFirst({
         select: { douId: true },
         orderBy: { douId: 'desc' },
       });
@@ -234,7 +237,7 @@ export class JobsService {
       const description = rssItem.content || rssItem.contentSnippet || '';
 
       // Scrape full details from job page
-      const pageData = await pageScraperService.scrapeJobPage(cleanedUrl);
+      const pageData = await this.pageScraperService.scrapeJobPage(cleanedUrl);
 
       return {
         douId,
@@ -260,7 +263,7 @@ export class JobsService {
    */
   async findOrCreateCompany(slug: string, name: string, logoUrl?: string): Promise<string> {
     try {
-      const company = await prisma.company.upsert({
+      const company = await this.prisma.company.upsert({
         where: { slug },
         create: {
           slug,
@@ -295,7 +298,7 @@ export class JobsService {
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '');
 
-      const location = await prisma.location.upsert({
+      const location = await this.prisma.location.upsert({
         where: { slug },
         create: {
           name: locationName,
@@ -332,7 +335,7 @@ export class JobsService {
       );
 
       // Check if job already exists
-      const existingJob = await prisma.job.findUnique({
+      const existingJob = await this.prisma.job.findUnique({
         where: { douId: jobData.douId },
         select: { id: true },
       });
@@ -340,7 +343,7 @@ export class JobsService {
       const isNewJob = !existingJob;
 
       // Upsert job
-      const job = await prisma.job.upsert({
+      const job = await this.prisma.job.upsert({
         where: { douId: jobData.douId },
         create: {
           douId: jobData.douId,
@@ -372,7 +375,7 @@ export class JobsService {
       // Handle locations if provided
       if (jobData.locations && jobData.locations.length > 0) {
         // Delete existing job-location relationships
-        await prisma.jobLocation.deleteMany({
+        await this.prisma.jobLocation.deleteMany({
           where: { jobId: job.id },
         });
 
@@ -381,7 +384,7 @@ export class JobsService {
           try {
             const locationId = await this.findOrCreateLocation(locationName);
 
-            await prisma.jobLocation.create({
+            await this.prisma.jobLocation.create({
               data: {
                 jobId: job.id,
                 locationId,
@@ -497,7 +500,7 @@ export class JobsService {
       logger.info('Starting Jobs Scraper...');
 
       // Create scraper session
-      const session = await prisma.scraperSession.create({
+      const session = await this.prisma.scraperSession.create({
         data: {
           status: 'in_progress',
         },
@@ -511,7 +514,7 @@ export class JobsService {
         logger.info('No new jobs found. Exiting early.');
 
         // Update session
-        await prisma.scraperSession.update({
+        await this.prisma.scraperSession.update({
           where: { id: sessionId },
           data: {
             status: 'success',
@@ -530,7 +533,7 @@ export class JobsService {
         logger.warn('No active categories found. Nothing to scrape.');
 
         // Update session
-        await prisma.scraperSession.update({
+        await this.prisma.scraperSession.update({
           where: { id: sessionId },
           data: {
             status: 'success',
@@ -577,13 +580,13 @@ export class JobsService {
       }
 
       // Get highest douId processed
-      const maxDouIdResult = await prisma.job.findFirst({
+      const maxDouIdResult = await this.prisma.job.findFirst({
         select: { douId: true },
         orderBy: { douId: 'desc' },
       });
 
       // Update session with final stats
-      await prisma.scraperSession.update({
+      await this.prisma.scraperSession.update({
         where: { id: sessionId },
         data: {
           status: sessionStatus,
@@ -615,7 +618,7 @@ export class JobsService {
 
       // Update session with failure status
       if (sessionId) {
-        await prisma.scraperSession.update({
+        await this.prisma.scraperSession.update({
           where: { id: sessionId },
           data: {
             status: 'failed',
@@ -630,5 +633,3 @@ export class JobsService {
     }
   }
 }
-
-export const jobsService = new JobsService();

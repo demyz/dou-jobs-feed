@@ -1,8 +1,8 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import type { PrismaClient } from '@repo/database';
 import { logger } from '@/core/logger/index';
 import { config } from '@/config/index';
-import { prisma } from '@/core/database/index';
 
 interface Category {
   name: string;
@@ -12,15 +12,11 @@ interface Category {
 }
 
 export class JobCategoriesService {
-  private readonly baseUrl: string;
-  private readonly userAgent: string;
-  private readonly selector: string;
+  private readonly baseUrl = config.baseUrl;
+  private readonly userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+  private readonly selector = '.b-jobs-search select[name=category] option';
 
-  constructor() {
-    this.baseUrl = config.baseUrl;
-    this.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-    this.selector = '.b-jobs-search select[name=category] option';
-  }
+  constructor(private readonly prisma: PrismaClient) {}
 
   async scrapCategories(): Promise<Category[]> {
     try {
@@ -71,14 +67,14 @@ export class JobCategoriesService {
 
     // Get all existing slugs to track new vs updated
     const existingSlugs = new Set(
-      (await prisma.jobCategory.findMany({ select: { slug: true } }))
+      (await this.prisma.jobCategory.findMany({ select: { slug: true } }))
         .map(c => c.slug)
     );
 
     for (const category of categories) {
       const isNew = !existingSlugs.has(category.slug);
 
-      await prisma.jobCategory.upsert({
+      await this.prisma.jobCategory.upsert({
         where: { slug: category.slug },
         create: {
           name: category.name,
@@ -127,6 +123,4 @@ export class JobCategoriesService {
     }
   }
 }
-
-export const jobCategoriesService = new JobCategoriesService();
 
