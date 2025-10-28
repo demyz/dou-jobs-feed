@@ -72,12 +72,9 @@ packages/database/src/generated/
 scraper/src/shared/generated/
 bot/public/
 
-# Webapp source (we only need the built version)
-webapp/src
+# Webapp - exclude only what's not needed for build
 webapp/node_modules
-webapp/*.config.*
-webapp/tsconfig.json
-webapp/*.html
+webapp/vitest.config.ts
 
 # Scraper source (development only, we build it)
 scraper/__tests__
