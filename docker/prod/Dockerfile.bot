@@ -17,7 +17,7 @@ COPY webapp/ ./webapp/
 RUN npm run -w webapp build
 
 # Stage 2: Build bot dependencies and shared packages
-FROM node:20-alpine AS dependencies
+FROM node:20-alpine AS builder-deps
 
 WORKDIR /app
 
@@ -27,8 +27,8 @@ COPY packages/database/package.json ./packages/database/
 COPY packages/logger/package.json ./packages/logger/
 COPY bot/package.json ./bot/
 
-# Install production dependencies only
-RUN npm ci --omit=dev
+# Install ALL dependencies (including dev) for building
+RUN npm ci
 
 # Copy database package and generate Prisma client
 COPY packages/database/ ./packages/database/
@@ -44,9 +44,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy dependencies from previous stage
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=dependencies /app/packages ./packages
-COPY --from=dependencies /app/package.json /app/package-lock.json ./
+COPY --from=builder-deps /app/node_modules ./node_modules
+COPY --from=builder-deps /app/packages ./packages
+COPY --from=builder-deps /app/package.json /app/package-lock.json ./
 
 # Copy bot source
 COPY bot/package.json ./bot/
@@ -64,13 +64,15 @@ WORKDIR /app
 
 # Copy root package files
 COPY package.json package-lock.json ./
-
-# Copy built dependencies and packages from dependencies stage
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=dependencies /app/packages ./packages
-
-# Copy bot package.json
+COPY packages/database/package.json ./packages/database/
+COPY packages/logger/package.json ./packages/logger/
 COPY bot/package.json ./bot/
+
+# Install production dependencies only
+RUN npm ci --omit=dev
+
+# Copy built packages from builder stage
+COPY --from=builder-deps /app/packages ./packages
 
 # Copy built bot from builder stage
 COPY --from=builder /app/bot/dist ./bot/dist
