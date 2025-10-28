@@ -202,7 +202,7 @@ describe('NotificationsService', () => {
       };
 
       mockPrisma.user.findMany.mockResolvedValue([mockUser]);
-      mockBot.api.sendMessage.mockResolvedValue({});
+      vi.mocked(mockBot.api.sendMessage).mockResolvedValue({} as any);
       mockPrisma.user.update.mockResolvedValue(mockUser);
 
       await notificationsService.sendNewJobNotifications();
@@ -241,7 +241,7 @@ describe('NotificationsService', () => {
       };
 
       mockPrisma.user.findMany.mockResolvedValue([mockUser]);
-      mockBot.api.sendMessage.mockRejectedValue(new Error('Send failed'));
+      vi.mocked(mockBot.api.sendMessage).mockRejectedValue(new Error('Send failed'));
 
       await notificationsService.sendNewJobNotifications();
 
