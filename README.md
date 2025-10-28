@@ -85,6 +85,8 @@ Svelte-based Telegram Mini App for subscription management.
 
 ## 🛠 Installation
 
+> **📦 Production Deployment?** See the [Production Deployment Guide](DEPLOYMENT.md) for deploying to VPS with Coolify.
+
 ### Prerequisites
 
 - Node.js 20+
@@ -236,13 +238,6 @@ docker compose build bot
 docker compose up -d bot
 ```
 
-### Database Viewer
-
-Prisma Studio is automatically started and available at:
-```
-http://localhost:5555
-```
-
 ## 📚 API Endpoints
 
 All endpoints require Telegram Web App `initData` authentication.
@@ -277,9 +272,14 @@ GET  /api/jobs/:id          - Get job details
 
 ## 📖 Documentation
 
+### Development
 - [Telegram Bot Setup Guide](docker/dev/TELEGRAM_BOT_SETUP.md) - Detailed bot configuration
 - [Cron Setup](docker/dev/CRON_SETUP.md) - Scraper automation
 - [Jobs Scraper Setup](docker/dev/JOBS_SCRAPER_SETUP.md) - Scraper details
+- [Testing Guide](TESTING.md) - Running tests
+
+### Production
+- **[Production Deployment Guide](DEPLOYMENT.md)** - Complete guide for deploying to VPS with Coolify
 
 ## 🎯 Roadmap
 

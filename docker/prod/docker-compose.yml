@@ -1,0 +1,136 @@
+name: dou-jobs-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dou-jobs-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-dou_jobs}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dou-jobs-network
+
+  bot:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile.bot
+    container_name: dou-jobs-bot-prod
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      API_PORT: ${API_PORT:-3000}
+      WEBAPP_URL: ${WEBAPP_URL}
+      NODE_ENV: production
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Scraper services for one-off execution (triggered by Cronicle)
+  category-scraper:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile.scraper
+    container_name: dou-jobs-category-scraper-prod
+    restart: "no"
+    working_dir: /app/scraper
+    command: node dist/tasks/run-category-scraper.js
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    profiles:
+      - cron
+
+  location-scraper:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile.scraper
+    container_name: dou-jobs-location-scraper-prod
+    restart: "no"
+    working_dir: /app/scraper
+    command: node dist/tasks/run-location-scraper.js
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    profiles:
+      - cron
+
+  jobs-scraper:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile.scraper
+    container_name: dou-jobs-jobs-scraper-prod
+    restart: "no"
+    working_dir: /app/scraper
+    command: node dist/tasks/run-jobs-scraper.js
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    profiles:
+      - cron
+
+  notification-sender:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile.bot
+    container_name: dou-jobs-notification-sender-prod
+    restart: "no"
+    working_dir: /app/bot
+    command: node dist/notifications/run-notification-sender.js
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+    profiles:
+      - cron
+
+volumes:
+  postgres_data:
+    name: dou-jobs-postgres-data
+
+networks:
+  dou-jobs-network:
+    name: dou-jobs-prod-network
+    driver: bridge
+

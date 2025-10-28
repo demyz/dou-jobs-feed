@@ -1,0 +1,71 @@
+# Stage 1: Build dependencies
+FROM node:20-alpine AS dependencies
+
+# Install dependencies for Prisma
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy root package.json and workspace package.json files
+COPY package*.json ./
+COPY packages/database/package*.json ./packages/database/
+COPY packages/logger/package*.json ./packages/logger/
+COPY scraper/package*.json ./scraper/
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy database package and generate Prisma client
+COPY packages/database/ ./packages/database/
+RUN npm run db:generate
+
+# Copy and build shared logger package
+COPY packages/logger/ ./packages/logger/
+RUN npm run -w @repo/logger build
+
+# Stage 2: Build scraper TypeScript
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies from previous stage
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/packages ./packages
+COPY --from=dependencies /app/package*.json ./
+
+# Copy scraper source
+COPY scraper/package*.json ./scraper/
+COPY scraper/tsconfig.json ./scraper/
+COPY scraper/src ./scraper/src
+
+# Build scraper
+WORKDIR /app/scraper
+RUN npm run build
+
+# Stage 3: Production runtime
+FROM node:20-alpine
+
+# Install dependencies for Prisma
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy root package files
+COPY package*.json ./
+
+# Copy built dependencies and packages from dependencies stage
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/packages ./packages
+
+# Copy scraper package.json
+COPY scraper/package*.json ./scraper/
+
+# Copy built scraper from builder stage
+COPY --from=builder /app/scraper/dist ./scraper/dist
+
+# Set working directory to scraper
+WORKDIR /app/scraper
+
+# Run in production mode
+CMD ["npm", "start"]
+

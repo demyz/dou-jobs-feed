@@ -1,0 +1,97 @@
+# Git
+.git
+.gitignore
+.github
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+**/dist
+**/build
+
+# Environment variables
+.env
+.env.*
+!.env.example
+env.example
+
+# IDE
+.vscode
+.idea
+.cursor
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database (local development data)
+db/
+*.db
+*.sqlite
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+**/__tests__
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+vitest.config.ts
+**/vitest.config.ts
+
+# Documentation (not needed in container)
+*.md
+!README.md
+TESTING.md
+QUICKSTART.md
+
+# Docker files (avoid recursive copies)
+docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Generated files
+packages/database/src/generated/
+scraper/src/shared/generated/
+bot/public/
+
+# Webapp source (we only need the built version)
+webapp/src
+webapp/node_modules
+webapp/*.config.*
+webapp/tsconfig.json
+webapp/*.html
+
+# Scraper source (development only, we build it)
+scraper/__tests__
+
+# Bot source (development only, we build it)
+bot/__tests__
+bot/coverage
+
+# Package lock files (we use package-lock.json only)
+yarn.lock
+pnpm-lock.yaml
+
+# Miscellaneous
+.prettierrc
+.eslintrc*
+.editorconfig
+
