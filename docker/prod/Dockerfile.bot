@@ -34,6 +34,9 @@ RUN npm ci
 COPY packages/database/ ./packages/database/
 RUN npm run db:generate
 
+# Build database package
+RUN npm run -w @repo/database build
+
 # Copy and build shared logger package
 COPY packages/logger/ ./packages/logger/
 RUN npm run -w @repo/logger build
@@ -62,17 +65,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy root package files
+# Copy built packages from builder stage (includes package.json and compiled code)
+COPY --from=builder-deps /app/packages ./packages
+
+# Copy root and bot package files
 COPY package.json package-lock.json ./
-COPY packages/database/package.json ./packages/database/
-COPY packages/logger/package.json ./packages/logger/
 COPY bot/package.json ./bot/
 
 # Install production dependencies only
 RUN npm ci --omit=dev
-
-# Copy built packages from builder stage
-COPY --from=builder-deps /app/packages ./packages
 
 # Copy built bot from builder stage
 COPY --from=builder /app/bot/dist ./bot/dist
