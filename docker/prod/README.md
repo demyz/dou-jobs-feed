@@ -8,6 +8,7 @@ This directory contains production-ready Docker configuration for deploying DOU 
 
 - **`Dockerfile.bot`** - Production Dockerfile for bot service (includes API server and Web App)
 - **`Dockerfile.scraper`** - Production Dockerfile for scraper tasks
+- **`Dockerfile.migrate`** - Dockerfile for running database migrations
 - **`docker-compose.yml`** - Production docker-compose configuration with all services
 
 ### Cronicle Scripts
@@ -43,14 +44,19 @@ docker compose ps
 
 ### 3. Initialize Database
 
-```bash
-# Run Prisma migrations
-docker compose run --rm bot npm run -w @repo/database db:push
+✨ **Migrations run automatically!** The `migrate` service will handle database setup.
 
+```bash
 # Scrape initial data
 ./run-category-scraper.sh
 ./run-location-scraper.sh
 ./run-jobs-scraper.sh
+```
+
+If you need to run migrations manually:
+
+```bash
+docker compose run --rm migrate
 ```
 
 ### 4. Make Scripts Executable
@@ -68,7 +74,10 @@ These services run continuously:
 | Service | Port | Description |
 |---------|------|-------------|
 | `postgres` | 5432 | PostgreSQL database |
+| `migrate` | - | Database migrations (runs once on startup) |
 | `bot` | 3000 | Telegram bot + API + Web App |
+
+**Note:** The `migrate` service runs automatically on each deployment, applies Prisma schema changes, and exits. The `bot` service waits for migrations to complete successfully before starting.
 
 ### One-Off Services (Cron Profile)
 
@@ -135,11 +144,47 @@ docker compose --profile cron run --rm jobs-scraper
 # Connect to database
 docker compose exec postgres psql -U postgres -d dou_jobs
 
+# Run migrations manually (if needed)
+docker compose run --rm migrate
+
 # Create backup
 docker compose exec postgres pg_dump -U postgres dou_jobs > backup.sql
 
 # Restore from backup
 docker compose exec -T postgres psql -U postgres dou_jobs < backup.sql
+```
+
+### Automatic Migrations
+
+✨ **Database migrations happen automatically on every deployment!**
+
+**How it works:**
+1. Coolify detects a push to your repository
+2. Docker Compose starts `postgres` service
+3. `migrate` service runs after postgres is healthy
+4. Prisma applies all schema changes via `db:push`
+5. After migrations complete, `bot` service starts
+6. Your app is ready with the latest schema
+
+**Benefits:**
+- 🚀 No manual intervention needed
+- 🔒 Bot won't start with outdated schema
+- ✅ Guaranteed consistency between code and database
+- 📝 Check `docker compose logs migrate` for migration logs
+
+**Finding Your Project Path in Coolify:**
+
+Coolify typically stores projects in `/data/coolify/applications/YOUR_APP_ID/`
+
+To find your exact path:
+```bash
+# Option 1: List running containers
+docker ps | grep dou-jobs
+
+# Option 2: Inspect a container to find its source path
+docker inspect dou-jobs-bot-prod | grep Source
+
+# Option 3: Check Coolify UI → Your App → Settings → Project Root
 ```
 
 ## 🔍 Monitoring

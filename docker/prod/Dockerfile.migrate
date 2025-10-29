@@ -1,0 +1,26 @@
+# Dockerfile for database migrations
+FROM node:20-alpine
+
+# Install dependencies for Prisma
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy root package.json and package-lock.json
+COPY package.json package-lock.json ./
+COPY packages/database/package.json ./packages/database/
+
+# Install dependencies
+RUN npm ci
+
+# Copy database package
+COPY packages/database/ ./packages/database/
+
+# Generate Prisma client
+RUN npm run db:generate
+
+WORKDIR /app/packages/database
+
+# Run migrations by default
+CMD ["npm", "run", "db:push"]
+

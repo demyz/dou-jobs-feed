@@ -2,6 +2,13 @@
 
 This guide covers deploying DOU Jobs Scraper to your VPS using Coolify with GitHub integration.
 
+## 🚀 TL;DR (Quick Overview)
+
+1. **Coolify** handles auto-deployment from GitHub
+2. **Database migrations** run automatically on every deployment - no manual intervention needed!
+3. **Cronicle** manages scheduled scraping tasks (hourly job scraper)
+4. Just push to GitHub, Coolify deploys, migrations run, bot starts 🎉
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
@@ -128,14 +135,17 @@ For Telegram Web App to work properly, you need HTTPS:
 Coolify will detect services from `docker-compose.yml`:
 
 #### Enable These Services:
-- ✅ **postgres** - Always running
-- ✅ **bot** - Always running
+- ✅ **postgres** - Always running (database)
+- ✅ **migrate** - Runs once on each deployment (automatic migrations)
+- ✅ **bot** - Always running (Telegram bot + API + Web App)
 
 #### Disable These Services (run via Cronicle):
 - ❌ **category-scraper** - One-off task
 - ❌ **location-scraper** - One-off task
 - ❌ **jobs-scraper** - One-off task
 - ❌ **notification-sender** - One-off task
+
+**Note:** The `migrate` service automatically runs before `bot` starts, so your database schema is always up-to-date.
 
 ### 4. Configure Networking
 
@@ -178,38 +188,53 @@ NODE_ENV=production
 
 ## Database Migration
 
-After first deployment, initialize the database:
+### Automatic Migrations
 
-### 1. SSH into Your VPS
+✨ **Good news!** Migrations now run automatically on every deployment.
+
+The `docker-compose.yml` includes a `migrate` service that:
+- Runs automatically when you deploy
+- Executes before the bot starts
+- Applies Prisma schema changes to the database
+- Exits after completion (doesn't keep running)
+
+**No manual action needed!** Just deploy, and migrations happen automatically.
+
+### How It Works
+
+1. Coolify pulls your latest code
+2. `postgres` container starts and becomes healthy
+3. `migrate` service runs `prisma db push`
+4. After migration succeeds, `bot` service starts
+5. Your app is ready with the latest database schema
+
+### Manual Migration (if needed)
+
+If you ever need to run migrations manually:
 
 ```bash
+# SSH into your VPS
 ssh user@your-vps-ip
+
+# Navigate to your project (Coolify stores projects in /data/coolify/)
+cd /data/coolify/applications/YOUR_APP_ID
+
+# Run migration
+docker compose run --rm migrate
 ```
 
-### 2. Navigate to Deployment Directory
+**Finding Your App Path in Coolify:**
+- Option 1: Check Coolify UI → Your App → Settings → Project Root
+- Option 2: Run `docker ps` to see container names, then use `docker inspect` to find the path
+- Option 3: Migrations run automatically anyway, so you usually don't need this!
+
+### Initial Data Setup
+
+After first deployment, populate initial data using Cronicle jobs or manually:
 
 ```bash
-cd /path/to/coolify/deployments/your-app
-# Or wherever Coolify stores your app
-```
+cd /data/coolify/applications/YOUR_APP_ID/docker/prod
 
-### 3. Run Prisma Migration
-
-```bash
-cd docker/prod
-docker compose run --rm bot npm run -w @repo/database db:push
-```
-
-This will:
-- Create all database tables
-- Set up relationships
-- Apply Prisma schema
-
-### 4. Initialize Data
-
-Run the scrapers to populate initial data:
-
-```bash
 # Scrape categories (run once)
 ./run-category-scraper.sh
 
@@ -219,6 +244,8 @@ Run the scrapers to populate initial data:
 # Scrape initial jobs (run once, or wait for cron)
 ./run-jobs-scraper.sh
 ```
+
+Or simply set up Cronicle jobs (see below) and let them run on schedule.
 
 ## Cronicle Setup
 

@@ -21,6 +21,21 @@ services:
     networks:
       - dou-jobs-network
 
+  # Migration service - runs once on startup
+  migrate:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile.migrate
+    container_name: dou-jobs-migrate-prod
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dou-jobs-network
+
   bot:
     build:
       context: ../..
@@ -38,6 +53,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - dou-jobs-network
     healthcheck:
