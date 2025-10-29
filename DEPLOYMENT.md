@@ -353,17 +353,36 @@ docker compose exec postgres psql -U postgres -c "SELECT pg_size_pretty(pg_datab
 
 ## Troubleshooting
 
+### Migration Failed (Exit Code 1)
+
+**This is the most common issue on first deployment.**
+
+If you see `service "migrate" didn't complete successfully: exit 1`:
+
+1. **Check Coolify logs** for detailed error message
+2. **Verify DATABASE_URL** uses `postgres` as hostname (not `localhost`)
+3. **See full troubleshooting guide**: [COOLIFY_TROUBLESHOOTING.md](COOLIFY_TROUBLESHOOTING.md)
+
+Common fix:
+```env
+# Make sure DATABASE_URL looks like this:
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@postgres:5432/dou_jobs?schema=public
+```
+
+Note: Use `postgres` (service name) not `localhost`!
+
 ### Bot Not Starting
 
 1. Check logs: `docker compose logs bot`
-2. Verify environment variables are set
+2. Verify environment variables are set in Coolify
 3. Check database connection: `docker compose exec bot node -e "console.log(process.env.DATABASE_URL)"`
+4. Ensure migrations completed: `docker compose logs migrate`
 
 ### Database Connection Issues
 
 1. Verify postgres is running: `docker compose ps postgres`
 2. Check healthcheck: `docker compose exec postgres pg_isready -U postgres`
-3. Verify DATABASE_URL format
+3. Verify DATABASE_URL format (must use `postgres` as hostname)
 
 ### Web App Not Loading
 
@@ -376,6 +395,10 @@ docker compose exec postgres psql -U postgres -c "SELECT pg_size_pretty(pg_datab
 1. Check logs in Cronicle
 2. Verify database connection
 3. Test manually: `cd docker/prod && ./run-jobs-scraper.sh`
+
+### For More Help
+
+See [COOLIFY_TROUBLESHOOTING.md](COOLIFY_TROUBLESHOOTING.md) for comprehensive troubleshooting guide.
 
 ## Updating the Application
 
@@ -432,6 +455,8 @@ If something goes wrong:
 
 ## Need Help?
 
+- **Deployment issues?** Check [Coolify Troubleshooting Guide](COOLIFY_TROUBLESHOOTING.md)
+- **Migration problems?** See [Migrations Guide](MIGRATIONS.md)
 - Check [main README](README.md) for architecture details
 - Review logs for specific errors
 - Check Coolify documentation: https://coolify.io/docs

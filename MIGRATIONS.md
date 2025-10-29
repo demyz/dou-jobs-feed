@@ -138,28 +138,68 @@ docker compose exec postgres psql -U postgres -d dou_jobs
 
 ## 🚨 Troubleshooting
 
-### Migration Failed
+### Migration Failed (Exit Code 1)
 
-If migration fails, the bot won't start (which is good - prevents issues).
+If you see `service "migrate" didn't complete successfully: exit 1`, the migration failed and bot won't start.
 
-**Check logs:**
-```bash
-docker compose logs migrate
-```
+**Step 1: Check logs in Coolify**
 
-**Common issues:**
+In Coolify UI:
+1. Go to your application
+2. Click on "Logs" tab
+3. Look for errors from the `migrate` service
+
+**Step 2: Common issues and fixes**
 
 1. **Database connection error**
-   - Check `DATABASE_URL` in environment variables
-   - Ensure postgres is running: `docker compose ps postgres`
+   - **Symptom**: `Can't reach database server`
+   - **Fix**: Check `DATABASE_URL` in Coolify environment variables
+   - **Verify**: Ensure postgres service is running and healthy
 
 2. **Schema syntax error**
-   - Review your Prisma schema
-   - Test locally before deploying
+   - **Symptom**: `Error validating model` or `Prisma schema parsing failed`
+   - **Fix**: Review your `packages/database/prisma/schema.prisma`
+   - **Test locally first!**
 
-3. **Incompatible change**
-   - Prisma `db:push` works for most changes
-   - For complex migrations, you might need `prisma migrate`
+3. **Missing dependencies**
+   - **Symptom**: `prisma: command not found` or similar
+   - **Fix**: Already handled in Dockerfile.migrate (installs all deps including devDependencies)
+
+4. **Prisma Client generation failed**
+   - **Symptom**: `@prisma/client did not initialize yet`
+   - **Fix**: Check that `npm run -w @repo/database generate` runs successfully during build
+
+**Step 3: Debug manually**
+
+SSH into your VPS and run migration manually to see detailed output:
+
+```bash
+# SSH into VPS
+ssh user@your-vps-ip
+
+# Find your project path
+docker ps | grep dou-jobs
+
+# Navigate to project
+cd /data/coolify/applications/YOUR_APP_ID
+
+# Run migration with verbose output
+docker compose run --rm migrate
+
+# Or connect to postgres directly to check
+docker compose exec postgres psql -U postgres -d dou_jobs
+```
+
+**Step 4: Check environment variables**
+
+Make sure these are set in Coolify:
+
+```env
+DATABASE_URL=postgresql://postgres:PASSWORD@postgres:5432/dou_jobs?schema=public
+POSTGRES_PASSWORD=same_password_as_in_database_url
+```
+
+⚠️ **Important**: The hostname in `DATABASE_URL` must be `postgres` (the service name), not `localhost`!
 
 ### Rollback Strategy
 
@@ -182,6 +222,7 @@ If deployment fails due to migration issues:
 
 ## 📚 Additional Resources
 
+- [Coolify Troubleshooting Guide](COOLIFY_TROUBLESHOOTING.md) - Quick fixes for Coolify deployment issues
 - [Prisma Documentation](https://www.prisma.io/docs/)
 - [Prisma DB Push](https://www.prisma.io/docs/concepts/components/prisma-migrate/db-push)
 - [Docker Compose depends_on](https://docs.docker.com/compose/compose-file/compose-file-v3/#depends_on)

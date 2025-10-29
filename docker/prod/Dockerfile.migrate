@@ -10,14 +10,14 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/database/package.json ./packages/database/
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies for prisma CLI)
 RUN npm ci
 
-# Copy database package
+# Copy database package (includes prisma schema)
 COPY packages/database/ ./packages/database/
 
 # Generate Prisma client
-RUN npm run db:generate
+RUN npm run -w @repo/database generate
 
 WORKDIR /app/packages/database
 
