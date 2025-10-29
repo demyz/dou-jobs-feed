@@ -217,9 +217,15 @@ docker system df
 
 ### Bot Won't Start
 
+**Error: `@prisma/client did not initialize yet`**
+- Fixed in updated Dockerfiles - Prisma Client is now generated during build
+- Solution: Rebuild the images: `docker compose build --no-cache bot`
+
+**Other issues:**
 1. Check logs: `docker compose logs bot`
 2. Verify environment variables: `docker compose config`
 3. Ensure database is healthy: `docker compose ps postgres`
+4. Verify migrations completed: `docker compose logs migrate`
 
 ### Database Connection Issues
 

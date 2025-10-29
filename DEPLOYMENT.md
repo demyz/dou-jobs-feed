@@ -373,6 +373,11 @@ Note: Use `postgres` (service name) not `localhost`!
 
 ### Bot Not Starting
 
+**Common error: `@prisma/client did not initialize yet`**
+- This has been fixed in the Dockerfiles (Prisma Client is now generated during build)
+- If you still see this, try **Force rebuild without cache** in Coolify
+
+**Other checks:**
 1. Check logs: `docker compose logs bot`
 2. Verify environment variables are set in Coolify
 3. Check database connection: `docker compose exec bot node -e "console.log(process.env.DATABASE_URL)"`

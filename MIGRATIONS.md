@@ -166,8 +166,13 @@ In Coolify UI:
    - **Fix**: Already handled in Dockerfile.migrate (installs all deps including devDependencies)
 
 4. **Prisma Client generation failed**
-   - **Symptom**: `@prisma/client did not initialize yet`
-   - **Fix**: Check that `npm run -w @repo/database generate` runs successfully during build
+   - **Symptom**: `@prisma/client did not initialize yet. Please run "prisma generate"`
+   - **Cause**: Prisma Client was not generated in production Docker image
+   - **Fix**: Already fixed in Dockerfile.bot and Dockerfile.scraper - they now:
+     - Install all dependencies (including prisma CLI)
+     - Generate Prisma Client
+     - Remove devDependencies with `npm prune --production`
+   - If still occurring, rebuild without cache in Coolify
 
 **Step 3: Debug manually**
 
