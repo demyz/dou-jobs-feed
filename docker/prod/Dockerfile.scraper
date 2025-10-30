@@ -33,6 +33,7 @@ WORKDIR /app
 
 # Copy dependencies from previous stage
 COPY --from=builder-deps /app/node_modules ./node_modules
+COPY --from=builder-deps /app/scraper/node_modules ./scraper/node_modules
 COPY --from=builder-deps /app/packages ./packages
 COPY --from=builder-deps /app/package.json /app/package-lock.json ./
 
